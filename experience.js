@@ -5,15 +5,43 @@
   const root = document.documentElement;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const sidebar = document.querySelector(".sidebar");
-  const menu = byId("menu-toggle");
+  const panel = byId("workspace-menu");
+  const toggles = [byId("menu-toggle"), byId("dock-menu")];
+  let menuTrigger;
   sidebar.classList.add("enhanced-nav");
-  function closeMenu() { sidebar.classList.remove("menu-open"); menu.setAttribute("aria-expanded", "false"); }
-  menu.addEventListener("click", () => {
-    const open = menu.getAttribute("aria-expanded") !== "true";
-    menu.setAttribute("aria-expanded", String(open)); sidebar.classList.toggle("menu-open", open);
+
+  function closeMenu(restoreFocus = false) {
+    sidebar.classList.remove("menu-open");
+    toggles.forEach(button => button.setAttribute("aria-expanded", "false"));
+    if (restoreFocus) menuTrigger?.focus();
+  }
+
+  toggles.forEach(button => button.addEventListener("click", () => {
+    if (sidebar.classList.contains("menu-open")) {
+      closeMenu(true);
+      return;
+    }
+    menuTrigger = button;
+    sidebar.classList.add("menu-open");
+    toggles.forEach(toggle => toggle.setAttribute("aria-expanded", "true"));
+    (panel.querySelector('a[aria-current="page"]') || panel.querySelector("a")).focus({ preventScroll: true });
+  }));
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && sidebar.classList.contains("menu-open")) closeMenu(true);
   });
-  sidebar.addEventListener("keydown", event => { if (event.key === "Escape") { closeMenu(); menu.focus(); } });
-  document.querySelectorAll(".nav a, .wordmark").forEach(anchor => anchor.addEventListener("click", closeMenu));
+  document.addEventListener("click", event => {
+    if (!panel.contains(event.target) && !toggles.some(button => button.contains(event.target))) closeMenu();
+  });
+  window.matchMedia("(min-width: 900px)").addEventListener("change", () => closeMenu());
+  document.querySelectorAll(".nav a, .wordmark, .phone-dock a").forEach(anchor => {
+    anchor.addEventListener("click", () => {
+      const wasOpen = sidebar.classList.contains("menu-open");
+      closeMenu();
+      if (wasOpen && anchor.hash === location.hash) {
+        byId(GP.page()).querySelector("h1").focus({ preventScroll: true });
+      }
+    });
+  });
 
   const icons = {
     overview: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -26,8 +54,8 @@
     tutor: '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>',
     account: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>'
   };
-  document.querySelectorAll(".nav a").forEach(anchor => {
-    const shape = icons[anchor.hash.slice(1)]; if (!shape) return;
+  document.querySelectorAll(".nav a, .phone-dock a, #dock-menu").forEach(anchor => {
+    const shape = anchor.id === "dock-menu" ? '<path d="M4 6h16M4 12h16M4 18h16"/>' : icons[anchor.hash.slice(1)]; if (!shape) return;
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round"); svg.setAttribute("aria-hidden", "true"); svg.classList.add("nav-icon"); svg.innerHTML = shape; anchor.prepend(svg);
   });

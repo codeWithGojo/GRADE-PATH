@@ -174,7 +174,7 @@
     const current = page();
     if (location.hash && location.hash !== "#main" && location.hash !== "#" + current) history.replaceState(null, "", "#" + current);
     for (const section of document.querySelectorAll(".page")) section.hidden = section.id !== current;
-    for (const anchor of document.querySelectorAll(".nav a")) {
+    for (const anchor of document.querySelectorAll(".nav a, .phone-dock a")) {
       if (anchor.getAttribute("href") === "#" + current) anchor.setAttribute("aria-current", "page");
       else anchor.removeAttribute("aria-current");
     }
@@ -183,7 +183,7 @@
     pageListeners.forEach(fn => fn(current));
     if (focus && location.hash !== "#main") {
       byId(current).querySelector("h1").focus({ preventScroll: true });
-      window.scrollTo({ top: 0 });
+      window.scrollTo({ top: 0, behavior: "instant" });
     }
   }
 
