@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- This frame has an opaque origin. Its worker cannot use network APIs. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' blob:; worker-src blob:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>GradePath JavaScript checker</title>
+</head>
+<body>
+<script>
+"use strict";
+
+function workerMain() {
+  "use strict";
+  self.addEventListener("message", event => {
+    const { code, functionName, cases } = event.data;
+    const results = [];
+    try {
+      const run = new Function('"use strict";\n' + code + '\nreturn typeof ' + functionName
+        + ' === "function" ? ' + functionName + ' : null;')();
+      if (!run) throw new Error("Define a function named " + functionName + ".");
+      for (const test of cases) {
+        const received = run(...test.input);
+        const expected = test.expected;
+        const passed = typeof expected === "number"
+          ? typeof received === "number" && Math.abs(received - expected) < 0.00001
+          : JSON.stringify(received) === JSON.stringify(expected);
+        results.push({
+          name: test.name, passed,
+          detail: "Expected " + JSON.stringify(expected) + ". Received " + String(JSON.stringify(received)).slice(0, 120) + "."
+        });
+      }
+      self.postMessage({ results });
+    } catch (error) {
+      self.postMessage({ error: String(error.message || error).slice(0, 350) });
+    }
+  });
+}
+
+window.addEventListener("message", event => {
+  if (event.source !== window.parent || event.data?.type !== "gradepath-run") return;
+  const { requestId, code, functionName, cases } = event.data;
+  if (typeof code !== "string" || code.length > 12000 || !["calculateGpa", "remainingTitles"].includes(functionName)
+    || !Array.isArray(cases) || cases.length > 8) return;
+
+  let worker;
+  let timeout;
+  let url;
+  const reply = data => {
+    window.clearTimeout(timeout);
+    if (worker) worker.terminate();
+    if (url) URL.revokeObjectURL(url);
+    window.parent.postMessage({ type: "gradepath-result", requestId, ...data }, "*");
+  };
+  try {
+    url = URL.createObjectURL(new Blob(["(" + workerMain.toString() + ")()"], { type: "text/javascript" }));
+    worker = new Worker(url);
+    worker.addEventListener("message", message => reply(message.data), { once: true });
+    worker.addEventListener("error", () => reply({ error: "The checker could not start. Try reopening GradePath." }), { once: true });
+    timeout = window.setTimeout(() => reply({ error: "Code took too long. Check that each loop can finish." }), 1600);
+    worker.postMessage({ code, functionName, cases });
+  } catch {
+    reply({ error: "The browser blocked the isolated checker. Open GradePath from the local server and try again." });
+  }
+});
+</script>
+</body>
+</html>

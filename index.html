@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Track your CGPA, plan revision, practise questions, and learn to code with GradePath.">
+  <meta name="theme-color" content="#101526">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <script src="appearance.js"></script>
+  <title>GradePath · Study planner</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="core.js" defer></script>
+  <script src="catalog.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="grades.js" defer></script>
+  <script src="study.js" defer></script>
+  <script src="exams.js" defer></script>
+  <script src="lab.js" defer></script>
+  <script src="online.js" defer></script>
+  <script src="school.js" defer></script>
+  <script src="experience.js" defer></script>
+</head>
+<body>
+  <div class="scroll-progress" aria-hidden="true"></div>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="wordmark" href="#overview" aria-label="GradePath overview"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> GradePath</a>
+      <button class="menu-button" id="menu-toggle" type="button" aria-expanded="false" aria-controls="workspace-navigation"><span class="menu-lines" aria-hidden="true"></span><span>Menu</span></button>
+      <div class="mode-control">
+        <span class="mode-caption">Your study path</span>
+        <div class="t-tabs mode-tabs" role="tablist" aria-label="Study mode">
+          <span class="t-tabs-pill" aria-hidden="true"></span>
+          <button class="t-tab" id="mode-university" role="tab" aria-controls="main" aria-selected="true" tabindex="0" data-mode="university">University</button>
+          <button class="t-tab" id="mode-secondary" role="tab" aria-controls="main" aria-selected="false" tabindex="-1" data-mode="secondary">Secondary</button>
+        </div>
+      </div>
+      <nav class="nav" id="workspace-navigation" aria-label="GradePath">
+        <a href="#overview" aria-current="page">Overview</a>
+        <a href="#grades" data-mode-only="university">Grades &amp; targets</a>
+        <a href="#school" data-mode-only="secondary" hidden>School results</a>
+        <a href="#exams" data-mode-only="secondary" hidden>Exam preparation</a>
+        <a href="#study">Study Room</a>
+        <a href="#practice">Practice</a>
+        <a href="#coding">Coding Lab</a>
+        <a href="#tutor">AI tutor</a>
+        <a href="#account">Account &amp; Plus</a>
+      </nav>
+      <div class="sidebar-foot">
+        <a href="#account" class="plus-link"><span>GradePath Plus</span><strong>₦1,000 <small>/ month</small></strong><span class="plus-hint">AI study support · Coming soon</span></a>
+        <span id="sidebar-mode">On this device</span>
+        <button id="export-data" class="text-button" type="button">Export study data</button>
+        <label class="text-button upload-label" for="import-data">Import a backup</label>
+        <input class="sr-only" type="file" id="import-data" accept=".json,application/json" aria-label="Import a GradePath backup">
+      </div>
+    </aside>
+
+    <main id="main" tabindex="-1" role="tabpanel" aria-labelledby="mode-university">
+      <div class="topbar">
+        <div class="breadcrumbs"><span id="workspace-label">University</span><span aria-hidden="true">/</span><span id="breadcrumb">Overview</span></div>
+        <div class="topbar-actions"><button id="theme-toggle" type="button" aria-label="Switch to dark theme" aria-pressed="false"><span class="theme-icon" aria-hidden="true">◐</span><span id="theme-label">Dark</span></button><a class="account-link" href="#account" id="top-account">Free workspace</a></div>
+      </div>
+      <div class="body">
+        <p id="global-status" class="notice" role="status" hidden></p>
+
+        <!-- Overview -->
+        <section class="page" id="overview" aria-labelledby="overview-heading">
+          <div class="dashboard-title"><div><p class="eyebrow" id="workspace-eyebrow">Your university workspace</p><h2>A little progress, every day.</h2></div><span class="today-label" id="today-label"></span></div>
+          <div class="overview-hero">
+            <div>
+              <p class="hero-label" id="week-label"></p>
+              <h1 id="overview-heading" tabindex="-1">Make progress.<br>See it happen.</h1>
+              <p id="overview-intro">Add your results and upcoming assessments to plan your week.</p>
+              <div class="actions">
+                <a class="button light" href="#study">Plan a study session</a>
+                <a class="button hero-secondary" id="hero-results-link" href="#grades">Add my grades</a>
+              </div>
+            </div>
+            <div class="hero-summary">
+              <div class="summary-top"><span class="summary-dot" aria-hidden="true"></span><p id="hero-score-label">Your current CGPA</p></div>
+              <div class="hero-value" id="hero-cgpa">—</div>
+              <p id="hero-units">Save a semester to see your CGPA.</p>
+              <div class="hero-bars" id="hero-bars" aria-hidden="true"></div>
+            </div>
+          </div>
+          <div class="path-strip" aria-label="Quick actions">
+            <a id="path-results" href="#grades"><span class="path-number" aria-hidden="true">01</span><span><strong>Know where you stand</strong><small id="path-results-label">Record your semester results</small></span><svg class="path-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a>
+            <a href="#study"><span class="path-number" aria-hidden="true">02</span><span><strong>Make a study plan</strong><small>Turn weak spots into next steps</small></span><svg class="path-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a>
+            <a href="#practice"><span class="path-number" aria-hidden="true">03</span><span><strong>Put it into practice</strong><small>Test yourself, review, repeat</small></span><svg class="path-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a>
+          </div>
+          <div class="metric-row">
+            <div class="metric"><span>Study tasks this week</span><strong id="metric-tasks">0 / 0</strong><small id="metric-minutes">0 min completed</small></div>
+            <div class="metric"><span>Latest quiz</span><strong id="metric-quiz">—</strong><small id="metric-quiz-label">Try a practice set</small></div>
+            <div class="metric"><span>Coding lessons passed</span><strong id="metric-lab">0 / 3</strong><a href="#coding">Open Coding Lab</a></div>
+          </div>
+          <div class="split">
+            <section class="card" aria-labelledby="priority-title">
+              <div class="section-head"><h2 id="priority-title">Study priorities</h2><a href="#study">Plan revision</a></div>
+              <div id="priorities" class="list"></div>
+            </section>
+            <section class="card" aria-labelledby="strength-title">
+              <div class="section-head"><h2 id="strength-title">Subject strengths</h2><a id="strength-results-link" href="#grades">View results</a></div>
+              <div id="strengths" class="list"></div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Grades -->
+        <section class="page" id="grades" aria-labelledby="grades-heading" hidden>
+          <div class="page-heading"><h1 id="grades-heading" tabindex="-1">Grades &amp; targets</h1><p>Record results, spot a trend, and see what grades you need next.</p></div>
+          <div class="split wide-left">
+            <div class="stack">
+              <section class="card">
+                <div class="section-head"><h2>Semester calculator</h2><button id="sample-grades" type="button" class="quiet">Try an example</button></div>
+                <form id="grade-form">
+                  <label class="field">Semester name <input id="term-name" maxlength="60" placeholder="e.g. 200 Level, First Semester"></label>
+                  <p class="help">Name the semester to save it. Enter completed semesters in order.</p>
+                  <div id="grade-courses" class="list"></div>
+                  <datalist id="subjects"></datalist>
+                  <div class="actions">
+                    <button id="add-grade-course" type="button">Add Course</button>
+                    <button type="submit" class="primary" value="calculate">Calculate GPA</button>
+                    <button type="submit" value="preview">Preview CGPA</button>
+                    <button id="save-term" type="submit" value="save">Save Semester</button>
+                    <button id="cancel-edit" type="button" class="quiet" hidden>Cancel edit</button>
+                  </div>
+                  <output id="grade-result" class="status" aria-live="polite"></output>
+                </form>
+              </section>
+              <details class="card settings">
+                <summary>Grading settings</summary>
+                <form id="grading-settings">
+                  <label class="field">Grading scale
+                    <select id="grade-scale"><option value="5">5.0 scale</option><option value="4">4.0 scale</option></select>
+                  </label>
+                  <div class="grade-points" id="grade-points"></div>
+                  <p class="help" id="scale-hint">Set grade points to match your school. Changes recalculate saved results.</p>
+                  <label class="check"><input id="retake" type="checkbox"> Latest attempt replaces earlier grades in CGPA</label>
+                  <p class="help">Use the same course code for each attempt when this rule applies.</p>
+                  <button class="primary" type="submit">Apply settings</button>
+                  <p id="settings-status" class="status" role="status"></p>
+                </form>
+              </details>
+            </div>
+
+            <div class="stack">
+              <section class="card">
+                <div class="section-head"><h2>CGPA trajectory</h2><span class="tag" id="current-scale">5.0 scale</span></div>
+                <p id="grade-history-value" class="big-number">—</p>
+                <canvas id="trajectory" height="170" aria-hidden="true" hidden></canvas>
+                <div id="semester-history" class="list"></div>
+                <details id="share-panel" class="sub-detail" hidden>
+                  <summary>Share progress</summary>
+                  <form id="share-form">
+                    <label class="field">Display name (optional) <input id="share-name" maxlength="45"></label>
+                    <p class="help">The PNG shows your CGPA journey and semester count.</p>
+                    <button type="submit">Download PNG</button>
+                  </form>
+                </details>
+              </section>
+              <section class="card">
+                <h2>Graduation target</h2>
+                <p class="help">Estimate your finish using additional units and an average GPA for those units.</p>
+                <form id="target-form">
+                  <div class="fields two">
+                    <label class="field">Target CGPA <input id="target-cgpa" type="number" min="0" max="5" step=".01" placeholder="3.50" required></label>
+                    <label class="field">New units left <input id="target-units" type="number" min="1" max="400" placeholder="24" required></label>
+                    <label class="field full">Expected GPA on new units <input id="future-gpa" type="number" min="0" max="5" step=".01" placeholder="4.00" required></label>
+                  </div>
+                  <button type="submit" class="primary">Check my target</button>
+                  <output id="target-result" class="status" aria-live="polite"></output>
+                </form>
+              </section>
+              <section class="card">
+                <h2>Exam mark needed</h2>
+                <form id="assessment-form">
+                  <div class="fields two">
+                    <label class="field">CA score (%) <input id="ca-score" type="number" min="0" max="100" step=".01" placeholder="70" required></label>
+                    <label class="field">CA weight (%) <input id="ca-weight" type="number" min="0" max="99.99" step=".01" placeholder="30" required></label>
+                    <label class="field full">Target overall mark (%) <input id="exam-target" type="number" min="0" max="100" step=".01" placeholder="70" required></label>
+                  </div>
+                  <button type="submit" class="primary">Check exam mark</button>
+                  <output id="assessment-result" class="status" aria-live="polite"></output>
+                </form>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Secondary school term results remain separate from university grades. -->
+        <section class="page" id="school" aria-labelledby="school-heading" hidden>
+          <div class="page-heading"><p class="eyebrow">Secondary school</p><h1 id="school-heading" tabindex="-1">Small steps. Stronger results.</h1><p>Track your subjects by term and find where to focus next.</p></div>
+          <div class="split wide-left">
+            <section class="card">
+              <div class="section-head"><h2>Term results</h2><span class="tag">Marks out of 100</span></div>
+              <form id="school-form">
+                <div class="fields two">
+                  <label class="field">Class<select id="school-class"><option>JSS 1</option><option>JSS 2</option><option>JSS 3</option><option>SS 1</option><option>SS 2</option><option selected>SS 3</option></select></label>
+                  <label class="field">Personal target (%)<input id="school-target" type="number" min="0" max="100" step="0.1" value="75" required></label>
+                  <label class="field full">Term name<input id="school-term" maxlength="60" placeholder="SS 3, First Term" required></label>
+                </div>
+                <div id="school-subjects" class="list"></div>
+                <p class="help">Use your final subject marks. The term average gives each subject equal weight. Enter terms in order.</p>
+                <div class="actions"><button id="add-school-subject" type="button">Add subject</button><button id="save-school-term" type="submit" class="primary">Save term</button><button id="cancel-school-edit" type="button" class="quiet" hidden>Cancel edit</button></div>
+                <p id="school-status" class="status" role="status"></p>
+              </form>
+            </section>
+            <div class="stack">
+              <section class="card"><h2>Your term journey</h2><p id="school-average" class="big-number">—</p><p id="school-change" class="help">Save your first term to get started.</p><div id="school-history" class="list"></div></section>
+              <section class="card exam-invitation"><span class="tag">WAEC · NECO · JAMB</span><h2>Exam season, with a plan.</h2><p class="secondary">Set your subject targets, record mock marks and practise against the clock.</p><a class="button primary" href="#exams">Open exam preparation</a></section>
+              <section class="card"><h2>What the scores mean</h2><p class="secondary">Your personal target helps you plan. These averages are not an official WAEC, NECO or school grade classification.</p></section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Secondary school exam preparation -->
+        <section class="page" id="exams" aria-labelledby="exams-heading" hidden>
+          <div class="page-heading"><h1 id="exams-heading" tabindex="-1">WAEC, NECO &amp; JAMB</h1><p>Choose your subjects, track mock scores, and plan what to revise before exam day.</p></div>
+          <div class="exam-tabs" role="group" aria-label="Choose an exam">
+            <button type="button" data-exam="WAEC" aria-pressed="true">WAEC / WASSCE</button>
+            <button type="button" data-exam="NECO" aria-pressed="false">NECO / SSCE</button>
+            <button type="button" data-exam="JAMB" aria-pressed="false">JAMB / UTME</button>
+          </div>
+          <div class="split wide-left">
+            <section class="card">
+              <h2 id="exam-plan-title">WAEC subject plan</h2>
+              <p class="help" id="exam-instructions">Add the subjects you’re preparing for and enter any mock scores you have.</p>
+              <form id="exam-form">
+                <div class="fields two">
+                  <label class="field">Exam date (optional) <input id="exam-date" type="date"></label>
+                  <label class="field"><span id="exam-target-label">Target per subject (/100)</span><input id="exam-score-target" type="number" min="0" max="100" step="1"></label>
+                </div>
+                <div class="list" id="exam-subjects"></div>
+                <datalist id="exam-subject-options"></datalist>
+                <div class="actions">
+                  <button id="add-exam-subject" type="button">Add subject</button>
+                  <button class="primary" type="submit">Save exam plan</button>
+                </div>
+                <p id="exam-status" class="status" role="status"></p>
+              </form>
+            </section>
+            <div class="stack">
+              <section class="card">
+                <h2>Mock results</h2>
+                <p id="exam-mock" class="big-number">—</p>
+                <p id="exam-mock-detail" class="help">Enter mock marks to see your strongest subjects and revision priorities.</p>
+                <div id="exam-insights" class="list"></div>
+              </section>
+              <section class="card">
+                <h2>Timed practice</h2>
+                <p class="help">GradePath’s questions are original practice. Use the official links for exam requirements and materials.</p>
+                <form id="exam-practice">
+                  <div class="fields two">
+                    <label class="field">Subject <select id="exam-practice-subject"></select></label>
+                    <label class="field">Time limit <select id="exam-practice-time"><option value="180">3 minutes</option><option value="300">5 minutes</option><option value="0">Untimed</option></select></label>
+                  </div>
+                  <div class="actions"><button class="primary" type="submit">Start practice</button><button id="ask-exam-tutor" type="button">Ask the tutor</button></div>
+                </form>
+                <p id="exam-practice-status" class="status" role="status"></p>
+              </section>
+              <section class="card"><h2>Official exam resources</h2><div id="exam-resources" class="list"></div></section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Study Room -->
+        <section class="page" id="study" aria-labelledby="study-heading" hidden>
+          <div class="page-heading"><h1 id="study-heading" tabindex="-1">Study Room</h1><p>Keep subjects, materials and revision sessions in one place. Your Study Room is shared between both modes.</p></div>
+          <div class="split">
+            <div class="stack">
+              <section class="card">
+                <h2>Subject &amp; assessment</h2>
+                <form id="profile-form">
+                  <div class="fields two">
+                    <label class="field">Subject / course code <input id="profile-code" list="known-courses" maxlength="24" placeholder="CSC 304" required></label>
+                    <label class="field">Subject / course name <input id="profile-name" maxlength="80" placeholder="Operating Systems"></label>
+                    <label class="field">Topic to study <input id="profile-topic" maxlength="60" placeholder="CPU scheduling"></label>
+                    <label class="field">Assessment date <input id="profile-date" type="date"></label>
+                    <label class="field full">Confidence
+                      <select id="profile-confidence">
+                        <option value="1">1 · Starting from scratch</option><option value="2">2 · Need practice</option>
+                        <option value="3" selected>3 · Getting there</option><option value="4">4 · Mostly confident</option>
+                        <option value="5">5 · Ready to explain it</option>
+                      </select>
+                    </label>
+                  </div>
+                  <button type="submit" class="primary">Save subject</button>
+                  <p id="profile-status" class="status" role="status"></p>
+                </form>
+                <div id="profiles" class="list"></div>
+              </section>
+              <section class="card">
+                <div class="section-head"><h2>Weekly study plan</h2><button id="make-plan" type="button" class="quiet">Suggest sessions</button></div>
+                <form id="task-form">
+                  <div class="fields two">
+                    <label class="field full">Study task <input id="task-title" maxlength="120" placeholder="Solve five scheduling questions" required></label>
+                    <label class="field full">Course (optional) <input id="task-course" list="known-courses" maxlength="24" placeholder="CSC 304"></label>
+                    <label class="field">Date <input id="task-date" type="date" required></label>
+                    <label class="field">Minutes <input id="task-minutes" type="number" min="5" max="300" value="25" required></label>
+                  </div>
+                  <button type="submit" class="primary">Add to plan</button>
+                  <p id="task-status" class="status" role="status"></p>
+                </form>
+                <label class="field week-control">Week of <input id="plan-week" type="date"></label>
+                <p id="week-summary" class="help"></p>
+                <div id="tasks" class="list"></div>
+              </section>
+            </div>
+
+            <div class="stack">
+              <section class="card">
+                <h2>Find study materials</h2>
+                <label class="field">Search open resources <input type="search" id="resource-search" placeholder="Try HTML, Python, or scheduling"></label>
+                <label class="field resource-course">Save to course (optional) <input id="resource-course" list="known-courses" maxlength="24" placeholder="CSC 304"></label>
+                <div id="resources" class="list"></div>
+                <p id="resource-status" class="status" role="status"></p>
+              </section>
+              <section class="card">
+                <h2>My materials</h2>
+                <details class="sub-detail">
+                  <summary>Add a link or approved past paper</summary>
+                  <form id="material-form">
+                    <div class="fields two">
+                      <label class="field full">Title <input id="material-title" maxlength="100" required></label>
+                      <label class="field full">Link <input id="material-link" type="url" maxlength="2000" placeholder="https://…" required></label>
+                      <label class="field">Course (optional) <input id="material-course" list="known-courses" maxlength="24"></label>
+                      <label class="field">Topic (optional) <input id="material-topic" maxlength="60"></label>
+                    </div>
+                    <button class="primary" type="submit">Save material</button>
+                  </form>
+                </details>
+                <p id="material-status" class="status" role="status"></p>
+                <div id="materials" class="list"></div>
+              </section>
+              <section class="card">
+                <h2>My notes</h2>
+                <p class="help">Keep notes on this device. Choose which notes to use when asking the tutor.</p>
+                <details class="sub-detail">
+                  <summary>Add notes</summary>
+                  <form id="note-form">
+                    <div class="fields two">
+                      <label class="field">Title <input id="note-title" maxlength="100" placeholder="Week 3 lecture"></label>
+                      <label class="field">Course (optional) <input id="note-course" list="known-courses" maxlength="24"></label>
+                      <label class="field full">Upload a PDF, TXT, or Markdown file <input id="note-file" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"></label>
+                      <label class="field full">Or paste your notes <textarea id="note-text" rows="4" maxlength="65000"></textarea></label>
+                    </div>
+                    <button class="primary" type="submit">Save notes</button>
+                  </form>
+                </details>
+                <p id="note-status" class="status" role="status"></p>
+                <div id="notes" class="list"></div>
+              </section>
+            </div>
+          </div>
+          <datalist id="known-courses"></datalist>
+        </section>
+
+        <!-- Practice -->
+        <section class="page" id="practice" aria-labelledby="practice-heading" hidden>
+          <div class="page-heading"><h1 id="practice-heading" tabindex="-1">Practice</h1><p>Test yourself, check the explanations, and revisit what you missed.</p></div>
+          <div class="split wide-left">
+            <div class="stack">
+              <section class="card">
+                <h2>Question bank</h2>
+                <form id="quiz-setup">
+                  <div class="fields two">
+                    <label class="field full">Question set
+                      <select id="quiz-exam"><option value="">General &amp; university</option><option>WAEC</option><option>NECO</option><option>JAMB</option></select>
+                    </label>
+                    <label class="field">Topic <select id="quiz-topic"><option value="">All topics</option></select></label>
+                    <label class="field">Time limit <select id="quiz-duration"><option value="0">Untimed</option><option value="60">1 minute</option><option value="180">3 minutes</option><option value="300">5 minutes</option></select></label>
+                  </div>
+                  <button class="primary" type="submit">Start practice</button>
+                  <p class="help">Start with original practice questions, or add questions from material you can use.</p>
+                </form>
+                <div id="quiz-player" hidden>
+                  <div class="section-head"><h3 id="quiz-title" tabindex="-1">Practice set</h3><span id="quiz-clock" class="tag" hidden></span></div>
+                  <form id="quiz-answer-form">
+                    <div id="quiz-questions" class="list"></div>
+                    <div class="actions"><button class="primary" type="submit">Submit answers</button><button id="cancel-quiz" type="button">End practice</button></div>
+                  </form>
+                </div>
+                <p id="quiz-status" class="status" role="status"></p>
+                <div id="quiz-review" class="list"></div>
+              </section>
+              <details class="card">
+                <summary>Add a practice question</summary>
+                <form id="question-form">
+                  <div class="fields two">
+                    <label class="field full">Question <textarea id="question-prompt" rows="3" maxlength="420" required></textarea></label>
+                    <label class="field">Topic <input id="question-topic" maxlength="60" required></label>
+                    <label class="field">Question set <select id="question-exam"><option value="">General &amp; university</option><option>WAEC</option><option>NECO</option><option>JAMB</option></select></label>
+                    <label class="field">Exam subject (optional) <input id="question-subject" list="exam-subject-options" maxlength="55"></label>
+                    <label class="field">Course (optional) <input id="question-course" list="known-courses" maxlength="24"></label>
+                    <label class="field">Option A <input class="question-option" maxlength="220" required></label>
+                    <label class="field">Option B <input class="question-option" maxlength="220" required></label>
+                    <label class="field">Option C <input class="question-option" maxlength="220" required></label>
+                    <label class="field">Option D <input class="question-option" maxlength="220" required></label>
+                    <label class="field full">Correct option <select id="question-correct"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></label>
+                    <label class="field full">Explanation <textarea id="question-explanation" rows="2" maxlength="550" required></textarea></label>
+                  </div>
+                  <button type="submit" class="primary">Save question</button>
+                  <p id="question-status" class="status" role="status"></p>
+                </form>
+                <div id="custom-questions" class="list"></div>
+              </details>
+            </div>
+            <div class="stack">
+              <section class="card">
+                <div class="section-head"><h2>Mistake notebook</h2><button id="review-mistakes" class="quiet" type="button">Review due</button></div>
+                <div id="mistakes" class="list"></div>
+              </section>
+              <section class="card"><h2>Recent scores</h2><div id="recent-scores" class="list"></div></section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Coding Lab -->
+        <section class="page" id="coding" aria-labelledby="coding-heading" hidden>
+          <div class="page-heading"><h1 id="coding-heading" tabindex="-1">Coding Lab</h1><p>Write a little code, run a check, and use the hints when you get stuck.</p></div>
+          <div class="split wide-left">
+            <section class="card">
+              <label class="field">Lesson <select id="lesson-select"></select></label>
+              <p class="help" id="lesson-skill"></p>
+              <h2 id="lesson-title"></h2>
+              <p id="lesson-objective"></p>
+              <label class="field">Your code <textarea id="code-editor" class="code" rows="13" maxlength="12000" spellcheck="false" autocomplete="off"></textarea></label>
+              <div class="actions">
+                <button class="primary" id="run-code" type="button">Run checks</button>
+                <button id="reset-code" type="button">Reset starter</button>
+                <button id="send-code" type="button" class="quiet">Ask AI about this code</button>
+              </div>
+              <p id="lab-status" class="status" role="status"></p>
+              <div id="lab-results" class="list"></div>
+              <iframe id="html-preview" title="Your HTML preview" sandbox="" hidden></iframe>
+              <iframe id="code-runner" title="Isolated JavaScript checker" sandbox="allow-scripts" src="runner.html" hidden></iframe>
+            </section>
+            <div class="stack">
+              <section class="card">
+                <h2>How it works</h2>
+                <p id="lesson-explanation"></p>
+                <button type="button" id="next-hint">Show a hint</button>
+                <ol id="lab-hints" class="hints"></ol>
+                <details class="sub-detail">
+                  <summary>See a worked solution</summary>
+                  <pre id="lab-solution" class="snippet"></pre>
+                  <button type="button" id="load-solution">Try this solution</button>
+                </details>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tutor -->
+        <section class="page" id="tutor" aria-labelledby="tutor-heading" hidden>
+          <div class="page-heading"><h1 id="tutor-heading" tabindex="-1">AI tutor</h1><p>Ask for an explanation, get a coding hint, or make a quiz from your notes.</p></div>
+          <div class="split wide-left">
+            <section class="card">
+              <div class="section-head"><h2>Study session</h2><span class="tag" id="ai-mode-status">Offline workspace</span></div>
+              <form id="tutor-form">
+                <div class="fields two">
+                  <label class="field">I want to
+                    <select id="tutor-mode">
+                      <option value="explain">Understand a topic</option>
+                      <option value="notes">Ask my notes</option>
+                      <option value="quiz">Generate a practice quiz</option>
+                      <option value="code">Get a coding hint</option>
+                    </select>
+                  </label>
+                  <label class="field">Course (optional) <input id="tutor-course" list="known-courses" maxlength="24"></label>
+                  <label class="field full" id="tutor-note-label" hidden>Notes to include <select id="tutor-note"><option value="">Choose your notes</option></select></label>
+                  <label class="field full">Question or topic <textarea id="tutor-question" rows="4" maxlength="1500" placeholder="Explain CPU scheduling using an example." required></textarea></label>
+                  <label class="field full" id="tutor-code-label" hidden>Code to include (optional) <textarea id="tutor-code" rows="6" maxlength="10000" spellcheck="false"></textarea></label>
+                </div>
+                <p class="help" id="tutor-context">Sending shares your question and any selected notes or code with the AI provider.</p>
+                <button class="primary" type="submit" id="ask-ai">Ask the tutor</button>
+                <p id="tutor-status" class="status" role="status"></p>
+              </form>
+              <article id="tutor-answer" class="tutor-answer" hidden>
+                <h3>Tutor response</h3><div id="tutor-text"></div>
+                <div id="tutor-sources"></div>
+                <button type="button" id="save-ai-quiz" hidden>Save quiz to Practice</button>
+              </article>
+            </section>
+            <section class="card">
+              <h2>Tutor access</h2>
+              <p id="tutor-access">Start the local server to connect accounts and AI.</p>
+              <a class="button" href="#account">Open account settings</a>
+              <p class="help">Use the answer to guide your revision. Check important details against your course materials.</p>
+            </section>
+          </div>
+        </section>
+
+        <!-- Account -->
+        <section class="page" id="account" aria-labelledby="account-heading" hidden>
+          <div class="page-heading"><h1 id="account-heading" tabindex="-1">Account &amp; Plus</h1><p>Connect the AI tutor, manage your subscription, and opt in to peer comparisons.</p></div>
+          <div class="split">
+            <div class="stack">
+              <section class="card">
+                <div class="section-head"><h2>Your account</h2><span class="tag" id="account-mode">Offline</span></div>
+                <p id="account-description">Open the project from the local server to create an account.</p>
+                <form id="auth-form" hidden>
+                  <div class="fields">
+                    <label class="field">Email <input id="auth-email" type="email" maxlength="120" autocomplete="username" required></label>
+                    <label class="field">Password <input id="auth-password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required></label>
+                    <label class="field" id="invite-label" hidden>Invite code for new accounts <input id="auth-invite" maxlength="120"></label>
+                  </div>
+                  <div class="actions"><button class="primary" type="submit" value="login">Sign in</button><button type="submit" value="register">Create account</button></div>
+                </form>
+                <button id="sign-out" type="button" hidden>Sign out</button>
+                <p id="account-status" class="status" role="status"></p>
+              </section>
+              <section class="card" data-mode-only="university">
+                <div class="section-head"><h2>Peer benchmark</h2><span class="tag">Opt-in</span></div>
+                <p class="help">Compare with participating students in the same school, programme, level, and grading setup. Results use self-reported grades.</p>
+                <form id="cohort-form">
+                  <div class="fields">
+                    <label class="field">School <input id="cohort-school" maxlength="90" placeholder="Bowen University" required></label>
+                    <label class="field">Programme <input id="cohort-programme" maxlength="80" placeholder="Computer Science" required></label>
+                    <label class="field">Level <select id="cohort-level"><option value="100">100</option><option value="200">200</option><option value="300">300</option><option value="400">400</option><option value="500">500</option><option value="600">600</option><option value="700">700+</option></select></label>
+                    <label class="check"><input id="cohort-consent" type="checkbox" required> Share my current CGPA and cohort for this comparison</label>
+                  </div>
+                  <div class="actions"><button id="cohort-join" class="primary" type="submit">Share &amp; view benchmark</button><button id="cohort-leave" type="button" hidden>Leave benchmark</button></div>
+                  <p id="cohort-status" class="status" role="status"></p>
+                  <div id="cohort-result"></div>
+                </form>
+              </section>
+            </div>
+            <section class="card plus-card">
+              <h2>GradePath Plus</h2>
+              <p class="price">₦1,000 <small>/ month</small></p>
+              <ul><li>AI tutor for questions about your notes</li><li>Personalised practice questions</li><li>Coding hints and debugging walkthroughs</li></ul>
+              <p id="plus-status" class="help">Subscription checkout is configured on the local server.</p>
+              <div class="actions"><button id="checkout" class="primary" type="button" disabled>Subscribe with Paystack</button><button id="manage-sub" type="button" hidden>Manage subscription</button></div>
+              <p id="billing-status" class="status" role="status"></p>
+            </section>
+          </div>
+        </section>
+      </div>
+    <footer class="workspace-footer"><span>GradePath · Made for your next step.</span><span>Your work is saved in this browser.</span></footer>
+    </main>
+  </div>
+
+  <template id="grade-course-template">
+    <fieldset class="course">
+      <legend></legend>
+      <div class="fields course-fields">
+        <label class="field">Course code (optional) <input class="course-code" list="known-courses" maxlength="24" placeholder="CSC 304"></label>
+        <label class="field">Subject area (optional) <input class="course-subject" list="subjects" maxlength="40" placeholder="Programming"></label>
+        <label class="field">Units <input class="course-units" type="number" min="1" max="60" step="1" required></label>
+        <label class="field">Grade <select class="course-grade"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select></label>
+      </div>
+      <button class="quiet remove-course" type="button">Remove course</button>
+    </fieldset>
+  </template>
+  <template id="exam-subject-template">
+    <fieldset class="course exam-subject">
+      <legend></legend>
+      <div class="fields two">
+        <label class="field full">Subject <input class="exam-name" maxlength="55" list="exam-subject-options" required></label>
+        <label class="field">Mock score (/100) <input class="exam-score" type="number" min="0" max="100" step="1"></label>
+        <label class="field">Confidence
+          <select class="exam-confidence"><option value="1">1 / 5</option><option value="2">2 / 5</option><option value="3" selected>3 / 5</option><option value="4">4 / 5</option><option value="5">5 / 5</option></select>
+        </label>
+        <label class="field full">Topic to revise (optional) <input class="exam-topic" maxlength="60" placeholder="e.g. Algebra"></label>
+      </div>
+      <button class="quiet remove-exam-subject" type="button">Remove subject</button>
+    </fieldset>
+  </template>
+  <noscript><p class="notice">Turn on JavaScript to use the calculator and study tools.</p></noscript>
+<button id="back-to-top" type="button" class="back-top" aria-label="Back to top" hidden>↑ <span>Top</span></button>
+  <p id="mode-announcement" class="sr-only" role="status"></p>
+</body>
+</html>
