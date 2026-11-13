@@ -27,7 +27,7 @@
   <div class="shell">
     <aside class="sidebar">
       <a class="wordmark" href="#overview" aria-label="GradePath overview"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> GradePath</a>
-      <button class="menu-button" id="menu-toggle" type="button" aria-expanded="false" aria-controls="workspace-menu"><span class="menu-lines" aria-hidden="true"></span><span>Profile</span></button>
+      <button class="menu-button" id="menu-toggle" data-repo-icon="menu" type="button" aria-expanded="false" aria-controls="workspace-menu"><span>Profile</span></button>
       <div class="mode-control">
         <span class="mode-caption">Your study path</span>
         <div class="t-tabs mode-tabs" role="tablist" aria-label="Study mode">
@@ -68,10 +68,10 @@
     </nav>
 
     <dialog id="profile-sheet" class="phone-sheet" aria-label="Profile and tools">
-      <div class="sheet-head"><h2>Profile and tools</h2><button type="button" data-sheet-close>Close</button></div>
+      <div class="sheet-head"><h2>Profile and tools</h2><button type="button" data-sheet-close data-repo-icon="close">Close</button></div>
     </dialog>
     <dialog id="entry-sheet" class="phone-sheet" aria-label="Enter results">
-      <div class="sheet-head"><h2>Enter results</h2><button type="button" data-sheet-close>Close</button></div>
+      <div class="sheet-head"><h2>Enter results</h2><button type="button" data-sheet-close data-repo-icon="close">Close</button></div>
     </dialog>
     <main id="main" tabindex="-1" role="tabpanel" aria-labelledby="mode-university">
       <div class="topbar">
@@ -484,36 +484,58 @@
 
         <!-- Coding Lab -->
         <section class="page" id="coding" aria-labelledby="coding-heading" hidden>
-          <div class="page-heading"><h1 id="coding-heading" tabindex="-1">Coding Lab</h1><p>Write a little code, run a check, and use the hints when you get stuck.</p></div>
-          <div class="split wide-left">
-            <section class="card">
-              <label class="field">Lesson <select id="lesson-select"></select></label>
-              <p class="help" id="lesson-skill"></p>
-              <h2 id="lesson-title"></h2>
-              <p id="lesson-objective"></p>
-              <label class="field">Your code <textarea id="code-editor" class="code" rows="13" maxlength="12000" spellcheck="false" autocomplete="off"></textarea></label>
-              <div class="actions">
-                <button class="primary" id="run-code" type="button">Run checks</button>
-                <button id="reset-code" type="button">Reset starter</button>
-                <button id="send-code" type="button" class="quiet">Ask AI about this code</button>
+          <div class="page-heading"><h1 id="coding-heading" tabindex="-1">Coding Lab</h1><p>Choose a lesson and work through it at your own pace.</p></div>
+          <div class="lab-workspace">
+            <aside class="lab-lessons" aria-label="Lesson selection">
+              <label class="field">Choose a lesson <select id="lesson-select"></select></label>
+              <p id="lab-progress" class="secondary"></p>
+              <progress id="lab-progress-bar" aria-label="Coding lessons completed"></progress>
+            </aside>
+            <div class="lab-desk">
+              <header class="lab-heading">
+                <h2 id="lesson-title"></h2>
+                <p id="lesson-skill" class="secondary"></p>
+              </header>
+              <div class="lab-tabs" role="tablist" aria-label="Lesson workspace">
+                <button id="lab-tab-guide" type="button" role="tab" aria-controls="lab-guide" aria-selected="true">Guide</button>
+                <button id="lab-tab-edit" type="button" role="tab" aria-controls="lab-edit" aria-selected="false" tabindex="-1">Editor</button>
+                <button id="lab-tab-checks" type="button" role="tab" aria-controls="lab-checks" aria-selected="false" tabindex="-1">Checks</button>
               </div>
-              <p id="lab-status" class="status" role="status"></p>
-              <div id="lab-results" class="list"></div>
-              <iframe id="html-preview" title="Your HTML preview" sandbox="" hidden></iframe>
-              <iframe id="code-runner" title="Isolated JavaScript checker" sandbox="allow-scripts" src="runner.html" hidden></iframe>
-            </section>
-            <div class="stack">
-              <section class="card">
-                <h2>How it works</h2>
-                <p id="lesson-explanation"></p>
-                <button type="button" id="next-hint">Show a hint</button>
-                <ol id="lab-hints" class="hints"></ol>
+              <section id="lab-guide" class="lab-panel" role="tabpanel" aria-labelledby="lab-tab-guide">
+                <h3>What to build</h3>
+                <p id="lesson-objective"></p>
                 <details class="sub-detail">
-                  <summary>See a worked solution</summary>
+                  <summary>How it works</summary>
+                  <p id="lesson-explanation"></p>
+                </details>
+                <div class="actions">
+                  <button id="start-editing" data-repo-icon="arrow" class="primary" type="button">Open editor</button>
+                  <button id="next-hint" type="button">Show a hint</button>
+                </div>
+                <ol id="lab-hints" class="hints" aria-live="polite"></ol>
+                <details class="sub-detail" id="solution-detail">
+                  <summary>Worked solution</summary>
                   <pre id="lab-solution" class="snippet"></pre>
                   <button type="button" id="load-solution">Try this solution</button>
                 </details>
               </section>
+              <section id="lab-edit" class="lab-panel" role="tabpanel" aria-labelledby="lab-tab-edit" hidden>
+                <label class="field">Your code <textarea id="code-editor" class="code" rows="12" maxlength="12000" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="off"></textarea></label>
+                <div class="actions lab-tools">
+                  <button id="reset-code" type="button">Reset starter</button>
+                  <button id="send-code" type="button" class="quiet">Get tutor help</button>
+                </div>
+              </section>
+              <section id="lab-checks" class="lab-panel" role="tabpanel" aria-labelledby="lab-tab-checks" hidden>
+                <h3>Test results</h3>
+                <p id="lab-status" class="status" role="status"></p>
+                <div id="lab-results" class="list"></div>
+                <iframe id="html-preview" title="Your HTML preview" sandbox="" hidden></iframe>
+                <iframe id="code-runner" title="Isolated JavaScript checker" sandbox="allow-scripts" src="runner.html" hidden></iframe>
+              </section>
+              <div class="lab-run">
+                <button class="primary" id="run-code" type="button">Run checks</button>
+              </div>
             </div>
           </div>
         </section>

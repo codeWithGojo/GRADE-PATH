@@ -1,7 +1,7 @@
 /* Coding lessons. User JavaScript runs only in the isolated checker frame. */
 (function () {
   "use strict";
-  const { C, catalog, byId, el, value, status, state, commit, row, replaceOptions } = GP;
+  const { C, catalog, byId, el, value, status, state, commit, onChange, row, replaceOptions } = GP;
   const editor = byId("code-editor");
   const select = byId("lesson-select");
   const frame = byId("code-runner");
@@ -11,6 +11,41 @@
   let running = null;
   let draftTimer;
   const currentLesson = () => catalog.lessons.find(lesson => lesson.id === select.value);
+
+  const tabs = [...document.querySelectorAll(".lab-tabs [role=tab]")];
+  function showPanel(id, focus = false) {
+    for (const tab of tabs) {
+      const active = tab.getAttribute("aria-controls") === id;
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+      byId(tab.getAttribute("aria-controls")).hidden = !active;
+      if (active && focus) tab.focus({ preventScroll: true });
+    }
+  }
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => showPanel(tab.getAttribute("aria-controls")));
+    tab.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1
+        : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+      showPanel(tabs[next].getAttribute("aria-controls"), true);
+    });
+  });
+
+  byId("start-editing").addEventListener("click", () => {
+    showPanel("lab-edit");
+    editor.focus();
+  });
+
+  function updateProgress() {
+    const done = catalog.lessons.filter(lesson => state.labPassed.includes(lesson.id)).length;
+    byId("lab-progress").textContent = done + " of " + catalog.lessons.length + " lessons completed";
+    const bar = byId("lab-progress-bar");
+    bar.max = catalog.lessons.length;
+    bar.value = done;
+  }
 
   function draft() {
     const lesson = currentLesson();
@@ -36,7 +71,9 @@
     preview.hidden = true;
     preview.srcdoc = "";
     hintIndex = 0;
-    status("lab-status", state.labPassed.includes(lesson.id) ? "Lesson completed." : "");
+    byId("solution-detail").open = false;
+    showPanel("lab-guide");
+    status("lab-status", state.labPassed.includes(lesson.id) ? "Lesson completed. Run checks to test this draft." : "Run your code to see the results here.");
   }
 
   editor.addEventListener("input", () => {
@@ -66,6 +103,7 @@
   byId("load-solution").addEventListener("click", () => {
     if (editor.value !== currentLesson().starter && !window.confirm("Replace this draft with the worked solution?")) return;
     editor.value = currentLesson().solution;
+    showPanel("lab-edit");
     draft();
     flushDraft();
     editor.focus();
@@ -146,6 +184,7 @@
     running = null;
     select.disabled = false;
     runButton.disabled = false;
+    runButton.textContent = "Run checks";
   }
 
   runButton.addEventListener("click", () => {
@@ -153,6 +192,7 @@
     draft();
     flushDraft();
     byId("lab-results").replaceChildren();
+    showPanel("lab-checks", true);
     if (lesson.kind === "html") {
       report(htmlPreview(editor.value), lesson);
       return;
@@ -160,10 +200,11 @@
     const requestId = C.id();
     select.disabled = true;
     runButton.disabled = true;
+    runButton.textContent = "Running…";
     status("lab-status", "Running your checks…");
     const timeout = window.setTimeout(() => {
       restoreControls();
-      status("lab-status", "The checker did not respond. Open the project using START-WINDOWS.cmd and retry.", "error");
+      status("lab-status", "The checker did not respond. Reload the page and try again.", "error");
     }, 4500);
     running = { requestId, timeout, lesson };
     frame.contentWindow.postMessage({ type: "gradepath-run", requestId, code: editor.value,
@@ -182,5 +223,6 @@
 
   replaceOptions(select, catalog.lessons.map(lesson => [lesson.id, lesson.title]));
   renderLesson();
+  onChange(updateProgress);
   window.addEventListener("gradepath-import", renderLesson);
 })();

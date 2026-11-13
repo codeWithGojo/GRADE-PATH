@@ -156,6 +156,27 @@
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round"); svg.setAttribute("aria-hidden", "true"); svg.classList.add("nav-icon"); svg.innerHTML = shape; anchor.prepend(svg);
   });
+  // Line icons reused from TerraScope's SiteHeader and ArrowUpRight components.
+  const repoIcons = {
+    menu: "M4 6h16M4 12h16M4 18h16",
+    close: "M6 6l12 12M18 6 6 18",
+    arrow: "M6 18 18 6M6 6h12v12"
+  };
+  document.querySelectorAll("[data-repo-icon]").forEach(control => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const path = document.createElementNS(svg.namespaceURI, "path");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "1.7");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    svg.classList.add("repo-icon");
+    path.setAttribute("d", repoIcons[control.dataset.repoIcon]);
+    svg.append(path);
+    control.prepend(svg);
+  });
   const bar = document.querySelector(".t-tabs");
   const pill = bar.querySelector(".t-tabs-pill");
   const tabs = [...bar.querySelectorAll(".t-tab")];

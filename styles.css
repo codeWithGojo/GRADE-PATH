@@ -466,3 +466,38 @@ meter::-moz-meter-bar { background: var(--blue); }
 }
 .study-tools { display: flex; flex-wrap: wrap; gap: 4px 18px; border-block: 1px solid var(--line); }
 .study-tools a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; }
+
+.repo-icon { flex: none; width: 18px; height: 18px; }
+.lab-workspace, .lab-desk, .lab-lessons { min-width: 0; }
+.lab-workspace { display: grid; align-items: start; gap: 22px; }
+.lab-lessons { display: grid; gap: 8px; }
+.lab-lessons progress { width: 100%; height: 7px; accent-color: var(--blue); }
+.lab-heading { display: grid; gap: 5px; margin-bottom: 12px; }
+.lab-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+.lab-tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--muted); }
+.lab-tabs button[aria-selected="true"] { border-color: var(--blue); color: var(--blue-dark); }
+.lab-panel { min-height: 170px; padding-block: 15px; }
+.lab-panel h3 { margin-bottom: 6px; }
+.lab-panel p { max-width: 65ch; }
+.lab-panel summary { min-height: 44px; align-content: center; }
+.lab-panel .sub-detail p { margin-bottom: 10px; }
+.lab-panel .hints:empty { display: none; }
+.lab-panel .hints li { margin-block: 7px; }
+.lab-panel .field .code { width: 100%; overflow: auto; font-size: 1rem; resize: vertical; }
+.lab-run { display: flex; justify-content: flex-end; border-top: 1px solid var(--line); padding-block: 10px; background: var(--paper); }
+@media (min-width: 1000px) {
+  .lab-workspace { grid-template-columns: minmax(160px, 235px) minmax(0, 1fr); }
+  .lab-lessons { border-right: 1px solid var(--line); padding-right: 18px; }
+}
+@media (max-width: 899px) {
+  .lab-run { position: sticky; bottom: calc(var(--dock-height) + env(safe-area-inset-bottom)); z-index: 3; }
+  .lab-run button { width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lab-panel:not([hidden]), .lab-panel .hints li:last-child { animation: lab-enter 180ms var(--ease-smooth-out) both; }
+  .phone-dock a[aria-current="page"] .nav-icon { animation: lab-enter 150ms var(--ease-smooth-out) both; }
+  .phone-sheet::backdrop { animation: backdrop-in 160ms ease-out both; }
+  .entry-steps span { transition: color 140ms ease-out; }
+  @keyframes lab-enter { from { opacity: .5; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+}
