@@ -148,12 +148,10 @@
     });
     byId("main").setAttribute("aria-labelledby", "mode-" + state.mode);
     byId("workspace-label").textContent = school ? "Secondary school" : "University";
-    byId("workspace-eyebrow").textContent = school ? "Your secondary school workspace" : "Your university workspace";
-    byId("overview-heading").replaceChildren(document.createTextNode(school ? "Build confidence." : "Make progress."), document.createElement("br"), document.createTextNode(school ? "Own exam day." : "See it happen."));
-    ["hero-results-link", "path-results", "strength-results-link"].forEach(id => { byId(id).href = school ? "#school" : "#grades"; });
-    byId("hero-results-link").textContent = school ? "Add my term results" : "Add my grades";
-    byId("path-results-label").textContent = school ? "Record your subject marks" : "Record your semester results";
-    byId("hero-score-label").textContent = school ? "Latest term average" : "Your current CGPA";
+    const results = school ? "#school" : "#grades";
+    byId("home-breakdown").href = results;
+    byId("strength-results-link").href = results;
+    byId("hero-score-label").textContent = school ? "Latest term average" : "Current CGPA";
     byId("profile-code").placeholder = school ? "MATHS" : "CSC 304";
     byId("profile-name").placeholder = school ? "Mathematics" : "Operating Systems";
     byId("profile-topic").placeholder = school ? "Quadratic equations" : "CPU scheduling";
@@ -175,7 +173,8 @@
     if (location.hash && location.hash !== "#main" && location.hash !== "#" + current) history.replaceState(null, "", "#" + current);
     for (const section of document.querySelectorAll(".page")) section.hidden = section.id !== current;
     for (const anchor of document.querySelectorAll(".nav a, .phone-dock a")) {
-      if (anchor.getAttribute("href") === "#" + current) anchor.setAttribute("aria-current", "page");
+      if (anchor.getAttribute("href") === "#" + current ||
+        (anchor.closest(".phone-dock") && anchor.hash === "#study" && ["exams", "projects", "coding", "tutor"].includes(current))) anchor.setAttribute("aria-current", "page");
       else anchor.removeAttribute("aria-current");
     }
     byId("breadcrumb").textContent = pageNames[current];
@@ -196,32 +195,60 @@
     applyMode();
     const today = C.localDay();
     byId("today-label").textContent = new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "long" }).format(new Date());
-    const week = C.weekStart(today);
-    const tasks = weekTasks(week);
-    const done = tasks.filter(task => task.completed);
-    const current = C.overall(state);
     const school = state.mode === "secondary";
+    const current = C.overall(state);
+    const summary = C.schoolSummary(state.schoolTerms);
+    const hasResults = school ? summary.average !== null : current.units > 0;
+    const exams = school ? Object.entries(state.exams).map(([name, exam]) => ({ name, date: exam.date }))
+      : state.profiles.map(profile => ({ name: profile.name || profile.code, date: profile.date }));
+    const exam = exams.filter(item => item.date && item.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0];
+    if (school && exam) byId("hero-results-link").dataset.exam = exam.name;
+    else delete byId("hero-results-link").dataset.exam;
+    const days = exam ? C.daysBetween(today, exam.date) : Infinity;
+    const revision = days <= 7;
+    const tasks = state.tasks.filter(task => task.date === today && !task.completed);
     const lastQuiz = state.attempts.find(attempt => school ? Boolean(attempt.exam) : !attempt.exam);
     const priorities = C.priorityList(state, today);
-    byId("week-label").textContent = "Week of " + C.dateText(week);
-    byId("overview-intro").textContent = priorities.length
-      ? "Start with " + (priorities[0].topic || priorities[0].name || priorities[0].code) + ". See why below."
-      : "Add your results and upcoming assessments to plan your week.";
-    byId("hero-cgpa").textContent = current.units ? current.gpa.toFixed(2) + " / " + state.scale.toFixed(1) : "—";
-    byId("hero-units").textContent = current.units ? current.units + " CGPA units · " + state.semesters.length + " saved semester(s)" : "Save a semester to see your CGPA.";
-    const termBars = C.timeline(state).slice(-6).map(term => {
-      const meter = el("meter");
-      meter.max = state.scale;
-      meter.value = term.cumulative.gpa;
-      return meter;
-    });
-    byId("hero-bars").hidden = !termBars.length;
-    byId("hero-bars").replaceChildren(...termBars);
-    byId("metric-tasks").textContent = done.length + " / " + tasks.length;
-    byId("metric-minutes").textContent = done.reduce((sum, task) => sum + task.minutes, 0) + " min completed";
-    byId("metric-quiz").textContent = lastQuiz ? lastQuiz.correct + " / " + lastQuiz.total : "—";
-    byId("metric-quiz-label").textContent = lastQuiz ? lastQuiz.topic + " · " + C.dateText(lastQuiz.date) : "Try a practice set";
-    byId("metric-lab").textContent = new Set(state.labPassed).size + " / " + catalog.lessons.length;
+    const action = byId("hero-results-link");
+    byId("overview-heading").textContent = revision ? "Time to revise" : hasResults ? "Today" : school ? "Add your term results" : "Add your grades";
+    byId("overview-intro").textContent = revision
+      ? exam.name + (days === 0 ? " is today. Review your priority topics." : " is in " + days + (days === 1 ? " day." : " days."))
+      : hasResults ? "" : school ? "Start with the marks from your latest term." : "Add a semester to see your CGPA.";
+    action.textContent = revision ? "Start revision" : !hasResults ? (school ? "Add term results" : "Add grades") : tasks.length ? "Open today’s tasks" : "Plan a study session";
+    action.href = revision ? (school ? "#exams" : "#study") : !hasResults ? (school ? "#school" : "#grades") : "#study";
+    action.dataset.entry = !hasResults && !revision ? (school ? "school-form" : "grade-form") : "";
+    byId("home-summary").hidden = !hasResults && !revision;
+    byId("home-breakdown").hidden = !hasResults;
+    byId("home-details").hidden = !hasResults && !revision;
+    const score = byId("hero-cgpa");
+    const previous = score.textContent;
+    score.textContent = !hasResults ? "" : school ? summary.average.toFixed(1) + "%" : current.gpa.toFixed(2) + " / " + state.scale.toFixed(1);
+    if (previous && previous !== score.textContent && score.textContent &&
+      !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      score.animate([{ opacity: .55 }, { opacity: 1 }], { duration: 170 });
+    }
+    byId("hero-units").textContent = !hasResults ? "" : school ? state.schoolClass + " · View term breakdown" : current.units + " units · View chart and what-if";
+    byId("home-exam").textContent = exam ? exam.name + " · " + C.dateText(exam.date) : "No assessment date saved";
+    byId("home-task").textContent = tasks[0]?.title || "No task planned for today";
+    byId("home-quiz").textContent = lastQuiz ? lastQuiz.correct + " / " + lastQuiz.total + " · " + lastQuiz.topic : "Take a practice set to see your score";
+
+    const completed = new Map();
+    for (const task of state.tasks) {
+      if (task.completed && task.completed <= today) completed.set(task.completed, (completed.get(task.completed) || 0) + 1);
+    }
+    let streak = 0;
+    const offset = completed.has(today) ? 0 : 1;
+    while (completed.has(C.shiftDay(-streak - offset, today))) streak++;
+    byId("home-activity").hidden = !hasResults && !revision && !completed.size;
+    byId("activity-label").textContent = streak ? streak + (streak === 1 ? " study day in a row." : " study days in a row.") : "Complete a study task to start a streak.";
+    byId("activity-grid").replaceChildren(...Array.from({ length: 28 }, (_, index) => {
+      const day = C.shiftDay(index - 27, today);
+      const count = completed.get(day) || 0;
+      const cell = el("span");
+      cell.dataset.activity = Math.min(count, 3);
+      cell.title = C.dateText(day) + " · " + count + (count === 1 ? " task" : " tasks");
+      return cell;
+    }));
     renderList("priorities", priorities.slice(0, 3).map(priority =>
       row(priority.topic || priority.name || priority.code, [priority.code, ...priority.reasons].join(" · "))
     ), "Add a course, confidence rating, or assessment date in the Study Room.");
@@ -243,13 +270,6 @@
     }), "Tag courses by subject when you save a semester to see which areas you’re doing well in.");
 
     if (school) {
-      const summary = C.schoolSummary(state.schoolTerms);
-      byId("hero-cgpa").textContent = summary.average === null ? "—" : summary.average.toFixed(1) + "%";
-      byId("hero-units").textContent = summary.average === null ? "Add your first term to start your journey." : state.schoolClass + " · " + summary.subjects.length + " subjects · Target " + state.schoolTarget + "%";
-      byId("overview-intro").textContent = "Keep your term results, WAEC, NECO and JAMB preparation in view. One focused session at a time.";
-      const bars = summary.history.slice(-6).map(term => { const meter = el("meter"); meter.max = 100; meter.value = term.average; return meter; });
-      byId("hero-bars").replaceChildren(...bars);
-      byId("hero-bars").hidden = !bars.length;
       renderList("strengths", summary.subjects.map((subject, index) => row(subject.name + " · " + subject.score + "%",
         subject.score >= state.schoolTarget ? "At or above your personal target" : (state.schoolTarget - subject.score).toFixed(1) + " points below your personal target")), "Save your term results to discover your strongest subjects and where to improve.");
       const examPlan = state.exams[state.selectedExam];

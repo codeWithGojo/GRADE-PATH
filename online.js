@@ -21,7 +21,7 @@
   if (!/^[A-Za-z0-9.-]{4,120}$/.test(callbackReference)) callbackReference = "";
 
   async function api(path, method = "GET", data) {
-    if (location.protocol === "file:") throw new Error("Start the local server using START-WINDOWS.cmd first.");
+    if (location.protocol === "file:") throw new Error("Online services are unavailable in this workspace.");
     const response = await fetch("/api" + path, {
       method, credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(45_000),
       headers: data ? { "Content-Type": "application/json" } : undefined,
@@ -58,6 +58,7 @@
         : "Accounts are coming soon on this site. All core study tools work without signing in; your work is saved in this browser.";
     signIn.hidden = !session.online || Boolean(account);
     byId("sign-out").hidden = !account;
+    byId("cloud-backup").hidden = !account || !session.workspaceBackup;
     byId("invite-label").hidden = !session.inviteRequired;
     byId("cohort-join").disabled = !account;
     if (!account) {
@@ -67,13 +68,13 @@
     renderBenchmark();
 
     byId("ai-mode-status").textContent = !session.online ? "Coming soon" : !session.aiConfigured
-      ? "Coming soon" : !account ? "Sign in to continue" : bill?.active ? "Plus" : "Free trial";
+      ? "Coming soon" : !account ? "Sign in to continue" : bill?.active ? "Plus" : "Free";
     byId("tutor-access").textContent = !session.online ? "The AI tutor is coming soon. In the meantime, use the practice questions, study resources and Coding Lab hints."
       : !session.aiConfigured ? "The AI tutor is not connected yet. You can keep using the study tools."
-        : !account ? "Sign in to try one AI request free."
+        : !account ? "Sign in for three free AI questions each day."
           : account.tutorRemaining ? account.tutorRemaining + " of " + account.tutorLimit + " requests left "
-            + (bill?.active ? "this paid period." : "in your free trial.")
-            : bill?.active ? "You’ve used your allowance for this paid period." : "Your free request has been used. Plus adds more tutoring.";
+            + (bill?.active ? "this paid period." : "today.")
+            : bill?.active ? "You’ve used your allowance for this paid period." : "You’ve used today’s three free questions. Come back tomorrow.";
     byId("ask-ai").disabled = !session.aiConfigured || !account?.tutorRemaining;
 
     byId("plus-status").textContent = !session.billingMode ? "Plus is planned at ₦1,000 per month. Subscriptions are not open yet; no payment is collected here."
@@ -84,6 +85,7 @@
               : account ? "Your plan renews monthly until cancelled." : "Sign in to subscribe.");
     document.querySelector(".plus-hint").textContent = session.billingMode ? "AI study support" : "AI study support · Coming soon";
     const checkout = byId("checkout");
+    checkout.hidden = !session.billingMode;
     checkout.disabled = !session.billingMode || !account || Boolean(bill?.active || bill?.hasSubscription || (bill?.pending && !bill?.canContinue));
     checkout.textContent = !session.billingMode ? "Plus is coming soon" : bill?.canContinue ? "Continue checkout" : session.billingMode === "test" ? "Open test checkout" : "Subscribe with Paystack";
     byId("manage-sub").hidden = !bill?.canManage;
@@ -135,6 +137,39 @@
       controls.forEach(button => { button.disabled = false; });
     }
   });
+
+  for (const id of ["cloud-save", "cloud-restore"]) {
+    byId(id).addEventListener("click", async () => {
+      const buttons = ["cloud-save", "cloud-restore", "sign-out"].map(byId);
+      buttons.forEach(button => { button.disabled = true; });
+      try {
+        if (id === "cloud-save") {
+          const existing = await api("/workspace");
+          if (existing.backup && !window.confirm("Replace the backup saved to your account with this device’s data?")) return;
+          await api("/workspace", "PUT", { backup: state });
+          status("account-status", "Backup saved to your account.", "success");
+        } else {
+          const result = await api("/workspace");
+          if (!result.backup) {
+            status("account-status", "No backup saved to this account yet.");
+            return;
+          }
+          const restored = C.normalizeState(result.backup);
+          if (!window.confirm("Replace this device’s study data with your account backup?")) return;
+          Object.assign(state, restored);
+          window.dispatchEvent(new Event("gradepath-import"));
+          commit();
+          go("account");
+          window.dispatchEvent(new Event("gradepath-mode"));
+          status("account-status", "Account backup restored.", "success");
+        }
+      } catch (error) {
+        status("account-status", error.message, "error");
+      } finally {
+        buttons.forEach(button => { button.disabled = false; });
+      }
+    });
+  }
 
   byId("sign-out").addEventListener("click", async () => {
     const button = byId("sign-out");

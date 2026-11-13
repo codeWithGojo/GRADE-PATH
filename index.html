@@ -27,7 +27,7 @@
   <div class="shell">
     <aside class="sidebar">
       <a class="wordmark" href="#overview" aria-label="GradePath overview"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> GradePath</a>
-      <button class="menu-button" id="menu-toggle" type="button" aria-expanded="false" aria-controls="workspace-menu"><span class="menu-lines" aria-hidden="true"></span><span>Menu</span></button>
+      <button class="menu-button" id="menu-toggle" type="button" aria-expanded="false" aria-controls="workspace-menu"><span class="menu-lines" aria-hidden="true"></span><span>Profile</span></button>
       <div class="mode-control">
         <span class="mode-caption">Your study path</span>
         <div class="t-tabs mode-tabs" role="tablist" aria-label="Study mode">
@@ -65,9 +65,14 @@
       <a href="#school" data-mode-only="secondary" hidden>Results</a>
       <a href="#study">Study</a>
       <a href="#practice">Practice</a>
-      <button id="dock-menu" type="button" aria-expanded="false" aria-controls="workspace-menu">More</button>
     </nav>
 
+    <dialog id="profile-sheet" class="phone-sheet" aria-label="Profile and tools">
+      <div class="sheet-head"><h2>Profile and tools</h2><button type="button" data-sheet-close>Close</button></div>
+    </dialog>
+    <dialog id="entry-sheet" class="phone-sheet" aria-label="Enter results">
+      <div class="sheet-head"><h2>Enter results</h2><button type="button" data-sheet-close>Close</button></div>
+    </dialog>
     <main id="main" tabindex="-1" role="tabpanel" aria-labelledby="mode-university">
       <div class="topbar">
         <div class="breadcrumbs"><span id="workspace-label">University</span><span aria-hidden="true">/</span><span id="breadcrumb">Overview</span></div>
@@ -78,36 +83,30 @@
 
         <!-- Overview -->
         <section class="page" id="overview" aria-labelledby="overview-heading">
-          <div class="dashboard-title"><div><p class="eyebrow" id="workspace-eyebrow">Your university workspace</p><h2>A little progress, every day.</h2></div><span class="today-label" id="today-label"></span></div>
-          <div class="overview-hero">
-            <div>
-              <p class="hero-label" id="week-label"></p>
-              <h1 id="overview-heading" tabindex="-1">Make progress.<br>See it happen.</h1>
-              <p id="overview-intro">Add your results and upcoming assessments to plan your week.</p>
-              <div class="actions">
-                <a class="button light" id="hero-results-link" href="#grades">Add my grades</a>
-                <a class="button hero-secondary" href="#study">Plan a study session</a>
-              </div>
-            </div>
-            <div class="hero-summary">
-              <div class="summary-top"><span class="summary-dot" aria-hidden="true"></span><p id="hero-score-label">Your current CGPA</p></div>
-              <div class="hero-value" id="hero-cgpa">—</div>
-              <p id="hero-units">Save a semester to see your CGPA.</p>
-              <div class="hero-bars" id="hero-bars" aria-hidden="true"></div>
-            </div>
+          <header class="home-header">
+            <p id="today-label" class="secondary"></p>
+            <h1 id="overview-heading" tabindex="-1">Today</h1>
+            <p id="overview-intro"></p>
+          </header>
+          <div class="home-action"><a class="button primary" id="hero-results-link" href="#grades">Add grades</a></div>
+          <div id="home-summary" class="home-summary" hidden>
+            <a class="home-score" id="home-breakdown" href="#grades">
+              <span id="hero-score-label">Current CGPA</span>
+              <strong id="hero-cgpa"></strong>
+              <small id="hero-units"></small>
+            </a>
+            <dl class="home-agenda">
+              <div><dt>Next exam or assessment</dt><dd id="home-exam"></dd></div>
+              <div><dt>Today's study task</dt><dd id="home-task"></dd></div>
+              <div><dt>Last quiz</dt><dd id="home-quiz"></dd></div>
+            </dl>
           </div>
-          <div class="path-strip" aria-label="Quick actions">
-            <a id="path-results" href="#grades"><span class="path-number" aria-hidden="true">01</span><span><strong>Record results</strong><small id="path-results-label">Record your semester results</small></span><svg class="path-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a>
-            <a href="#study"><span class="path-number" aria-hidden="true">02</span><span><strong>Plan revision</strong><small>Turn weak spots into next steps</small></span><svg class="path-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a>
-            <a href="#practice"><span class="path-number" aria-hidden="true">03</span><span><strong>Take a quiz</strong><small>Test yourself, review, repeat</small></span><svg class="path-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a>
-          </div>
-          <a class="project-entry" href="#projects" data-mode-only="university"><strong>Final Year Projects</strong><span>Find a topic, plan your build or get a Dev Boyz quote →</span></a>
-          <div class="metric-row">
-            <div class="metric"><span>Study tasks this week</span><strong id="metric-tasks">0 / 0</strong><small id="metric-minutes">0 min completed</small></div>
-            <div class="metric"><span>Latest quiz</span><strong id="metric-quiz">—</strong><small id="metric-quiz-label">Try a practice set</small></div>
-            <div class="metric"><span>Coding lessons passed</span><strong id="metric-lab">0 / 3</strong><a href="#coding">Open Coding Lab</a></div>
-          </div>
-          <div class="split">
+          <section class="home-activity" id="home-activity" hidden>
+            <h2>Study activity</h2>
+            <p id="activity-label" class="secondary"></p>
+            <div id="activity-grid" aria-hidden="true"></div>
+          </section>
+          <div class="split home-details" id="home-details" hidden>
             <section class="card" aria-labelledby="priority-title">
               <div class="section-head"><h2 id="priority-title">Study priorities</h2><a href="#study">Plan revision</a></div>
               <div id="priorities" class="list"></div>
@@ -122,7 +121,7 @@
         <section class="page" id="projects" aria-labelledby="projects-heading" hidden>
           <div class="page-heading">
             <h1 id="projects-heading" tabindex="-1">Final Year Projects</h1>
-            <p>Find a topic for IT, Computer Science or Software Engineering, plan your build, and get support from Dev Boyz.</p>
+            <p>Find a topic for IT, Computer Science or Software Engineering and plan your build.</p>
           </div>
           <div class="split wide-left">
             <section class="card">
@@ -146,13 +145,13 @@
                 <div id="project-milestones" class="list"></div>
               </section>
               <section class="card" id="project-quote">
-                <h2>Get a quote from Dev Boyz</h2>
-                <p class="help">Request a working prototype, hardware setup, help with a module, or a walkthrough. Quotes depend on scope and are separate from GradePath Plus. Check your department’s rules for outside assistance.</p>
+                <h2>Dev Boyz project quotes</h2>
+                <p class="help">Request a working prototype, hardware setup, help with a module, or a walkthrough. Dev Boyz handles these quotes and any project work separately. GradePath Plus does not include project services. Check your department’s rules for outside assistance.</p>
                 <form id="project-enquiry">
                   <label class="field">Project topic <input id="quote-topic" maxlength="120" required></label>
                   <div class="fields two">
                     <label class="field">Deadline <input id="quote-deadline" type="date"></label>
-                    <label class="field">Budget (₦) <input id="quote-budget" type="number" min="0" step="1" max="100000000"></label>
+                    <label class="field">Budget (₦) <input id="quote-budget" type="number" inputmode="decimal" min="0" step="1" max="100000000"></label>
                   </div>
                   <label class="field">What should Dev Boyz help you build? <textarea id="quote-scope" rows="4" maxlength="600" required></textarea></label>
                   <button class="primary" type="submit">Open WhatsApp enquiry</button>
@@ -170,6 +169,7 @@
             <div class="stack">
               <section class="card">
                 <div class="section-head"><h2>Semester calculator</h2><button id="sample-grades" type="button" class="quiet">Try an example</button></div>
+                <button class="primary open-entry" type="button" data-entry="grade-form">Add grades</button>
                 <form id="grade-form">
                   <label class="field">Semester name <input id="term-name" maxlength="60" placeholder="e.g. 200 Level, First Semester"></label>
                   <p class="help">Name the semester to save it. Enter completed semesters in order.</p>
@@ -204,7 +204,7 @@
             <div class="stack">
               <section class="card">
                 <div class="section-head"><h2>CGPA trajectory</h2><span class="tag" id="current-scale">5.0 scale</span></div>
-                <p id="grade-history-value" class="big-number">—</p>
+                <p id="grade-history-value" class="big-number">No semesters yet</p>
                 <canvas id="trajectory" height="170" aria-hidden="true" hidden></canvas>
                 <div id="semester-history" class="list"></div>
                 <details id="share-panel" class="sub-detail" hidden>
@@ -220,10 +220,12 @@
                 <h2>Graduation target</h2>
                 <p class="help">Estimate your finish using additional units and an average GPA for those units.</p>
                 <form id="target-form">
+                  <label class="field">Try a future GPA <input type="range" id="future-slider" min="0" max="5" step="0.01" value="3.5"></label>
+                  <p class="help" id="future-live">Enter remaining units to see your projected CGPA.</p>
                   <div class="fields two">
-                    <label class="field">Target CGPA <input id="target-cgpa" type="number" min="0" max="5" step=".01" placeholder="3.50" required></label>
-                    <label class="field">New units left <input id="target-units" type="number" min="1" max="400" placeholder="24" required></label>
-                    <label class="field full">Expected GPA on new units <input id="future-gpa" type="number" min="0" max="5" step=".01" placeholder="4.00" required></label>
+                    <label class="field">Target CGPA <input id="target-cgpa" type="number" inputmode="decimal" min="0" max="5" step=".01" placeholder="3.50" required></label>
+                    <label class="field">New units left <input id="target-units" type="number" inputmode="decimal" min="1" max="400" placeholder="24" required></label>
+                    <label class="field full">Expected GPA on new units <input id="future-gpa" type="number" inputmode="decimal" min="0" max="5" step=".01" placeholder="4.00" required></label>
                   </div>
                   <button type="submit" class="primary">Check my target</button>
                   <output id="target-result" class="status" aria-live="polite"></output>
@@ -233,9 +235,9 @@
                 <h2>Exam mark needed</h2>
                 <form id="assessment-form">
                   <div class="fields two">
-                    <label class="field">CA score (%) <input id="ca-score" type="number" min="0" max="100" step=".01" placeholder="70" required></label>
-                    <label class="field">CA weight (%) <input id="ca-weight" type="number" min="0" max="99.99" step=".01" placeholder="30" required></label>
-                    <label class="field full">Target overall mark (%) <input id="exam-target" type="number" min="0" max="100" step=".01" placeholder="70" required></label>
+                    <label class="field">CA score (%) <input id="ca-score" type="number" inputmode="decimal" min="0" max="100" step=".01" placeholder="70" required></label>
+                    <label class="field">CA weight (%) <input id="ca-weight" type="number" inputmode="decimal" min="0" max="99.99" step=".01" placeholder="30" required></label>
+                    <label class="field full">Target overall mark (%) <input id="exam-target" type="number" inputmode="decimal" min="0" max="100" step=".01" placeholder="70" required></label>
                   </div>
                   <button type="submit" class="primary">Check exam mark</button>
                   <output id="assessment-result" class="status" aria-live="polite"></output>
@@ -247,14 +249,15 @@
 
         <!-- Secondary school term results remain separate from university grades. -->
         <section class="page" id="school" aria-labelledby="school-heading" hidden>
-          <div class="page-heading"><p class="eyebrow">Secondary school</p><h1 id="school-heading" tabindex="-1">Small steps. Stronger results.</h1><p>Track your subjects by term and find where to focus next.</p></div>
+          <div class="page-heading"><p class="eyebrow">Secondary school</p><h1 id="school-heading" tabindex="-1">School results</h1><p>Track your subjects by term and find where to focus next.</p></div>
           <div class="split wide-left">
             <section class="card">
               <div class="section-head"><h2>Term results</h2><span class="tag">Marks out of 100</span></div>
+              <button class="primary open-entry" type="button" data-entry="school-form">Add term results</button>
               <form id="school-form">
                 <div class="fields two">
                   <label class="field">Class<select id="school-class"><option>JSS 1</option><option>JSS 2</option><option>JSS 3</option><option>SS 1</option><option>SS 2</option><option selected>SS 3</option></select></label>
-                  <label class="field">Personal target (%)<input id="school-target" type="number" min="0" max="100" step="0.1" value="75" required></label>
+                  <label class="field">Personal target (%)<input id="school-target" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="75" required></label>
                   <label class="field full">Term name<input id="school-term" maxlength="60" placeholder="SS 3, First Term" required></label>
                 </div>
                 <div id="school-subjects" class="list"></div>
@@ -264,8 +267,8 @@
               </form>
             </section>
             <div class="stack">
-              <section class="card"><h2>Your term journey</h2><p id="school-average" class="big-number">—</p><p id="school-change" class="help">Save your first term to get started.</p><div id="school-history" class="list"></div></section>
-              <section class="card exam-invitation"><span class="tag">WAEC · NECO · JAMB</span><h2>Exam season, with a plan.</h2><p class="secondary">Set your subject targets, record mock marks and practise against the clock.</p><a class="button primary" href="#exams">Open exam preparation</a></section>
+              <section class="card"><h2>Your term journey</h2><p id="school-average" class="big-number">No terms yet</p><p id="school-change" class="help">Save your first term to get started.</p><div id="school-history" class="list"></div></section>
+              <section class="card exam-invitation"><span class="tag">WAEC · NECO · JAMB</span><h2>Exam preparation</h2><p class="secondary">Set your subject targets, record mock marks and practise against the clock.</p><a class="button primary" href="#exams">Open exam preparation</a></section>
               <section class="card"><h2>What the scores mean</h2><p class="secondary">Your personal target helps you plan. These averages are not an official WAEC, NECO or school grade classification.</p></section>
             </div>
           </div>
@@ -286,7 +289,7 @@
               <form id="exam-form">
                 <div class="fields two">
                   <label class="field">Exam date (optional) <input id="exam-date" type="date"></label>
-                  <label class="field"><span id="exam-target-label">Target per subject (/100)</span><input id="exam-score-target" type="number" min="0" max="100" step="1"></label>
+                  <label class="field"><span id="exam-target-label">Target per subject (/100)</span><input id="exam-score-target" type="number" inputmode="decimal" min="0" max="100" step="1"></label>
                 </div>
                 <div class="list" id="exam-subjects"></div>
                 <datalist id="exam-subject-options"></datalist>
@@ -300,7 +303,7 @@
             <div class="stack">
               <section class="card">
                 <h2>Mock results</h2>
-                <p id="exam-mock" class="big-number">—</p>
+                <p id="exam-mock" class="big-number">No mock scores yet</p>
                 <p id="exam-mock-detail" class="help">Enter mock marks to see your strongest subjects and revision priorities.</p>
                 <div id="exam-insights" class="list"></div>
               </section>
@@ -324,6 +327,12 @@
         <!-- Study Room -->
         <section class="page" id="study" aria-labelledby="study-heading" hidden>
           <div class="page-heading"><h1 id="study-heading" tabindex="-1">Study Room</h1><p>Keep subjects, materials and revision sessions in one place. Your Study Room is shared between both modes.</p></div>
+          <nav class="study-tools" aria-label="Study tools">
+            <a href="#exams" data-mode-only="secondary" hidden>Exam preparation</a>
+            <a href="#projects" data-mode-only="university">Final Year Projects</a>
+            <a href="#coding">Coding Lab</a>
+            <a href="#tutor">AI tutor</a>
+          </nav>
           <div class="split">
             <div class="stack">
               <section class="card">
@@ -354,7 +363,7 @@
                     <label class="field full">Study task <input id="task-title" maxlength="120" placeholder="Solve five scheduling questions" required></label>
                     <label class="field full">Course (optional) <input id="task-course" list="known-courses" maxlength="24" placeholder="CSC 304"></label>
                     <label class="field">Date <input id="task-date" type="date" required></label>
-                    <label class="field">Minutes <input id="task-minutes" type="number" min="5" max="300" value="25" required></label>
+                    <label class="field">Minutes <input id="task-minutes" type="number" inputmode="decimal" min="5" max="300" value="25" required></label>
                   </div>
                   <button type="submit" class="primary">Add to plan</button>
                   <p id="task-status" class="status" role="status"></p>
@@ -542,7 +551,7 @@
             </section>
             <section class="card">
               <h2>Tutor access</h2>
-              <p id="tutor-access">Start the local server to connect accounts and AI.</p>
+              <p id="tutor-access">AI tutor access is coming soon.</p>
               <a class="button" href="#account">Open account settings</a>
               <p class="help">Use the answer to guide your revision. Check important details against your course materials.</p>
             </section>
@@ -556,7 +565,7 @@
             <div class="stack">
               <section class="card">
                 <div class="section-head"><h2>Your account</h2><span class="tag" id="account-mode">Offline</span></div>
-                <p id="account-description">Open the project from the local server to create an account.</p>
+                <p id="account-description">Accounts are coming soon. Study data is saved in this browser.</p>
                 <form id="auth-form" hidden>
                   <div class="fields">
                     <label class="field">Email <input id="auth-email" type="email" maxlength="120" autocomplete="username" required></label>
@@ -565,12 +574,17 @@
                   </div>
                   <div class="actions"><button class="primary" type="submit" value="login">Sign in</button><button type="submit" value="register">Create account</button></div>
                 </form>
+                <div id="cloud-backup" hidden>
+                  <p class="help">Save a copy to your account or restore it on another device.</p>
+                  <div class="actions"><button id="cloud-save" type="button">Save to account</button><button id="cloud-restore" type="button">Restore from account</button></div>
+                </div>
                 <button id="sign-out" type="button" hidden>Sign out</button>
                 <p id="account-status" class="status" role="status"></p>
               </section>
               <section class="card" data-mode-only="university">
                 <div class="section-head"><h2>Peer benchmark</h2><span class="tag">Opt-in</span></div>
                 <p class="help">Compare with participating students in the same school, programme, level, and grading setup. Results use self-reported grades.</p>
+                <p class="help">Privacy (NDPR): joining is optional. Your CGPA and cohort details are used to calculate your comparison. Other students see their own rank and the cohort size. Use Leave benchmark to remove your entry.</p>
                 <form id="cohort-form">
                   <div class="fields">
                     <label class="field">School <input id="cohort-school" maxlength="90" placeholder="Bowen University" required></label>
@@ -588,8 +602,8 @@
               <h2>GradePath Plus</h2>
               <p class="price">₦1,000 <small>/ month</small></p>
               <ul><li>AI tutor for questions about your notes</li><li>Personalised practice questions</li><li>Coding hints and debugging walkthroughs</li></ul>
-              <p id="plus-status" class="help">Subscription checkout is configured on the local server.</p>
-              <div class="actions"><button id="checkout" class="primary" type="button" disabled>Subscribe with Paystack</button><button id="manage-sub" type="button" hidden>Manage subscription</button></div>
+              <p id="plus-status" class="help">Plus is planned at ₦1,000 per month. Subscriptions are coming soon.</p>
+              <div class="actions"><button id="checkout" class="primary" type="button" disabled hidden>Plus is coming soon</button><button id="manage-sub" type="button" hidden>Manage subscription</button></div>
               <p id="billing-status" class="status" role="status"></p>
             </section>
           </div>
@@ -605,7 +619,7 @@
       <div class="fields course-fields">
         <label class="field">Course code (optional) <input class="course-code" list="known-courses" maxlength="24" placeholder="CSC 304"></label>
         <label class="field">Subject area (optional) <input class="course-subject" list="subjects" maxlength="40" placeholder="Programming"></label>
-        <label class="field">Units <input class="course-units" type="number" min="1" max="60" step="1" required></label>
+        <label class="field">Units <input class="course-units" type="number" inputmode="decimal" min="1" max="60" step="1" required></label>
         <label class="field">Grade <select class="course-grade"><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select></label>
       </div>
       <button class="quiet remove-course" type="button">Remove course</button>
@@ -616,7 +630,7 @@
       <legend></legend>
       <div class="fields two">
         <label class="field full">Subject <input class="exam-name" maxlength="55" list="exam-subject-options" required></label>
-        <label class="field">Mock score (/100) <input class="exam-score" type="number" min="0" max="100" step="1"></label>
+        <label class="field">Mock score (/100) <input class="exam-score" type="number" inputmode="decimal" min="0" max="100" step="1"></label>
         <label class="field">Confidence
           <select class="exam-confidence"><option value="1">1 / 5</option><option value="2">2 / 5</option><option value="3" selected>3 / 5</option><option value="4">4 / 5</option><option value="5">5 / 5</option></select>
         </label>

@@ -30,6 +30,6 @@ export function settings(env = process.env) {
       plusLimit: int(env.AI_PLUS_LIMIT, 60, 1, 1000, "AI_PLUS_LIMIT"),
       dailyLimit: int(env.AI_DAILY_LIMIT, 150, 1, 10000, "AI_DAILY_LIMIT")
     },
-    payment: { key: paymentKey, plan: paymentPlan, mode: paymentMode, enabled: Boolean(paymentKey && paymentPlan) }
+    payment: { key: paymentKey, plan: paymentPlan, mode: paymentMode, enabled: Boolean(paymentKey && paymentPlan && (paymentMode === "test" || env.GRADEPATH_ENABLE_LIVE_PAYMENTS === "true")) }
   };
 }

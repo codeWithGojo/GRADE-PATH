@@ -51,7 +51,7 @@ If port 3000 is already in use, run `node server.mjs --port 3001` and open `http
 2. Set `OPENAI_API_KEY` to your OpenAI API key. The default model is `gpt-4.1-mini`. You can change it with `OPENAI_MODEL` to a model on your account that supports structured output.
 3. Restart the server, open **Account & Plus**, create an account, and try the tutor.
 
-The free trial allows one successful request per account. The default Plus allowance is 60 requests per paid period, configurable in `.env` with `AI_PLUS_LIMIT`. `AI_DAILY_LIMIT` caps attempts across your server. The tutor sends the question and any included code or relevant note excerpts to OpenAI. It can reference the supplied pages or sections and save generated quizzes to Practice. The GradePath server does not keep tutor transcripts.
+Free accounts get three successful requests per day, resetting at midnight in Nigeria. The default Plus allowance is 60 requests per paid period, configurable in `.env` with `AI_PLUS_LIMIT`. `AI_DAILY_LIMIT` caps attempts across your server. The tutor sends the question and any included code or relevant note excerpts to OpenAI. It can reference the supplied pages or sections and save generated quizzes to Practice. The GradePath server does not keep tutor transcripts.
 
 Keep provider keys in `.env`. Never place them in an HTML or JavaScript file served to the browser. [OpenAI Responses API documentation](https://developers.openai.com/api/reference/resources/responses/methods/create)
 
@@ -94,8 +94,8 @@ Run `npm test` with Node installed to check calculations, retake handling, bench
 
 ## Deploy the browser workspace
 
-Run `npm run build` to create `dist/`. The build uses an explicit public-file list, so server code, tests, data and secrets are excluded. Vercel reads the supplied configuration and serves that directory. The `/api/status` route reports that online services are disabled.
+Run `npm run build` to create `dist/`. The existing Vercel project builds automatically from the GitHub `main` branch.
 
-The current production project is named `gradepath` on Vercel. Its GitHub repository is not connected yet. Once an empty repository is created under `codeWithGojo`, push these source files and connect that repository to the existing Vercel project. Do not create a second production project unnecessarily.
+The Vercel gateway serves the offline status when no backend is configured. To turn on accounts, backups and benchmarking, run `node server.mjs` on a durable HTTPS host with a persistent volume for `DATA_DIR`. Set `PUBLIC_URL` there to the public GradePath Vercel origin and set `GRADEPATH_BACKEND_ORIGIN` on Vercel to the HTTPS backend origin. Configure `OPENAI_API_KEY` on the backend for tutoring. Use account backup and restore to move study data between devices.
 
-Deploying this static build does not deploy the SQLite backend. For hosted accounts and payments, first choose durable server hosting or migrate the backend to a managed database and suitable server functions.
+Keep checkout closed until account, tutor, and Paystack test flows have passed on that deployment. Hosted checkout requires `GRADEPATH_ENABLE_HOSTED_CHECKOUT=true` on Vercel. Live payments additionally require `GRADEPATH_ENABLE_LIVE_PAYMENTS=true` on the backend with live Paystack configuration.

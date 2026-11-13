@@ -81,6 +81,12 @@ test("accounts, opt-in benchmarks, metered tutoring, and verified subscription r
     assert.match(registered.cookie, /HttpOnly; SameSite=Lax/);
     cookie = registered.cookie.split(";")[0];
 
+    assert.equal((await request("/api/workspace")).data.backup, null);
+    assert.equal((await request("/api/workspace", "PUT", { backup: {} })).code, 400);
+    assert.equal((await request("/api/workspace", "PUT", { backup: { scale: 5, semesters: [] } })).code, 200);
+    assert.equal((await request("/api/workspace")).data.backup.scale, 5);
+    assert.equal((await request("/api/workspace", "GET", undefined, { authorization: "" })).code, 401);
+
     const cohort = { school: "Example University", programme: "Computing", level: "200", scale: 5, cgpa: 4.6,
       points: [5, 4, 3, 2, 1, 0], replace: false };
     assert.equal((await request("/api/benchmark", "PUT", cohort)).code, 400);
@@ -101,7 +107,9 @@ test("accounts, opt-in benchmarks, metered tutoring, and verified subscription r
     const trial = await request("/api/tutor", "POST", prompt);
     assert.equal(trial.code, 200);
     assert.equal(trial.data.sources.length, 1);
-    assert.equal(trial.data.remaining, 0);
+    assert.equal(trial.data.remaining, 2);
+    assert.equal((await request("/api/tutor", "POST", prompt)).data.remaining, 1);
+    assert.equal((await request("/api/tutor", "POST", prompt)).data.remaining, 0);
     assert.equal((await request("/api/tutor", "POST", prompt)).code, 402);
 
     const checkout = (await request("/api/billing/start", "POST", {})).data;
@@ -116,7 +124,7 @@ test("accounts, opt-in benchmarks, metered tutoring, and verified subscription r
     assert.equal((await request("/api/billing/start", "POST", {})).code, 409);
     assert.equal((await request("/api/billing/manage", "POST", {})).data.url, "https://paystack.com/manage/fixture");
     assert.equal((await request("/api/tutor", "POST", prompt)).data.remaining, 59);
-    assert.equal(aiCalls, 2);
+    assert.equal(aiCalls, 4);
 
     const reference = "gradepath-renewal-test";
     transactions.set(reference, {

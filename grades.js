@@ -132,6 +132,7 @@
     byId("save-term").textContent = "Update Semester";
     byId("cancel-edit").hidden = false;
     gradeStatus("Editing " + term.name);
+    window.dispatchEvent(new CustomEvent("gradepath-edit-results", { detail: "grade-form" }));
     byId("term-name").focus();
   }
 
@@ -230,7 +231,7 @@
     const data = C.timeline(state);
     const last = data.at(-1);
     byId("current-scale").textContent = state.scale.toFixed(1) + " scale";
-    byId("grade-history-value").textContent = last ? last.cumulative.gpa.toFixed(2) + " / " + state.scale.toFixed(2) : "—";
+    byId("grade-history-value").textContent = last ? last.cumulative.gpa.toFixed(2) + " / " + state.scale.toFixed(2) : "No semesters yet";
     graph.hidden = !last;
     byId("share-panel").hidden = !last;
     if (last && Number(value("grade-scale")) !== state.scale) fillSettings();
@@ -249,7 +250,32 @@
     drawGraph(data);
   }
 
-  byId("target-form").addEventListener("input", () => status("target-result", ""));
+  function showProjection(event) {
+    const slider = byId("future-slider");
+    const future = byId("future-gpa");
+    const current = C.overall(state);
+    slider.max = Math.max(...Object.values(state.points));
+    slider.min = Math.min(...Object.values(state.points));
+    if (event?.target === slider) future.value = slider.value;
+    else if (future.value !== "") slider.value = future.value;
+    const units = byId("target-units").valueAsNumber;
+    const output = byId("future-live");
+    if (!current.units || !Number.isInteger(units) || units < 1 || units > 400) {
+      output.textContent = current.units ? "Enter remaining units to see your projected CGPA." : "Save a semester to start a projection.";
+      return;
+    }
+    const predicted = (current.gpa * current.units + Number(slider.value) * units) / (current.units + units);
+    const bands = state.scale === 5 ? [[4.5, "First Class"], [3.5, "Second Class Upper"], [2.4, "Second Class Lower"], [1.5, "Third Class"], [1, "Pass"]] : [];
+    const band = bands.find(([cutoff]) => predicted + 1e-9 >= cutoff);
+    const classification = state.scale !== 5 ? "" : band ? " · " + band[1] : " · Below Pass";
+    output.textContent = "Future GPA " + Number(slider.value).toFixed(2) + " · Projected CGPA " + predicted.toFixed(2) +
+      (classification ? classification + " (example 5-point bands. Check your school’s rules.)" : "");
+  }
+  byId("target-form").addEventListener("input", event => {
+    status("target-result", "");
+    showProjection(event);
+  });
+  onChange(showProjection);
   byId("target-form").addEventListener("submit", event => {
     event.preventDefault();
     const current = C.overall(state);

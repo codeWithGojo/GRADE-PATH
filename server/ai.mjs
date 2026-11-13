@@ -27,8 +27,9 @@ const schema = {
 export function createTutor(db, config, billing, fetcher) {
   function allowance(userId) {
     const access = billing.summary(userId);
-    const bucket = access.active ? "plus-" + access.paidAt : "trial";
-    const limit = access.active ? config.plusLimit : 1;
+    const day = new Date(Date.now() + 3_600_000).toISOString().slice(0, 10);
+    const bucket = access.active ? "plus-" + access.paidAt : "free-" + day;
+    const limit = access.active ? config.plusLimit : 3;
     const used = db.prepare("SELECT count(*) AS total FROM ai_uses WHERE user_id=? AND bucket=? AND outcome!='failed'")
       .get(userId, bucket).total;
     return { bucket, limit, remaining: Math.max(0, limit - used), access };
@@ -38,7 +39,7 @@ export function createTutor(db, config, billing, fetcher) {
     return transaction(db, () => {
       const current = allowance(userId);
       if (!current.remaining) throw new AppError(402, current.access.active
-        ? "You’ve used the tutoring allowance for this paid period." : "Your free tutor request has been used. Subscribe to continue.");
+        ? "You’ve used the tutoring allowance for this paid period." : "You’ve used today’s three free questions. Come back tomorrow.");
       const now = Date.now();
       const day = new Date(now);
       day.setUTCHours(0, 0, 0, 0);
@@ -51,7 +52,7 @@ export function createTutor(db, config, billing, fetcher) {
   }
 
   async function ask(user, input) {
-    if (!config.key) throw new AppError(503, "Add an OpenAI API key to the local server before using the tutor.");
+    if (!config.key) throw new AppError(503, "The AI tutor is unavailable right now.");
     const { mode } = input;
     const question = clean(input.question, 1500);
     const code = mode === "code" ? clean(input.code, 10000) : "";
@@ -108,7 +109,7 @@ export function createTutor(db, config, billing, fetcher) {
       outcome = "completed";
       return { answer, sources, questions };
     } catch {
-      throw new AppError(502, "The tutor could not finish this request. Try again or check the server’s OpenAI key and model.");
+      throw new AppError(502, "The tutor could not finish this request. Try again in a moment.");
     } finally {
       db.prepare("UPDATE ai_uses SET outcome=? WHERE id=?").run(outcome, requestId);
     }

@@ -9,7 +9,7 @@
     const nameLabel = el("label", "Subject", "field");
     const name = el("input"); name.required = true; name.maxLength = 55; name.value = subject.name || ""; name.placeholder = "e.g. Mathematics"; name.className = "school-name";
     const scoreLabel = el("label", "Mark /100", "field");
-    const score = el("input"); score.type = "number"; score.min = "0"; score.max = "100"; score.step = "0.1"; score.required = true; score.value = subject.score ?? ""; score.className = "school-score";
+    const score = el("input"); score.type = "number"; score.inputMode = "decimal"; score.min = "0"; score.max = "100"; score.step = "0.1"; score.required = true; score.value = subject.score ?? ""; score.className = "school-score";
     nameLabel.append(name); scoreLabel.append(score);
     const remove = clickButton("Remove", () => {
       if (subjects.children.length === 1) { status("school-status", "Keep at least one subject.", "error"); return; }
@@ -36,6 +36,7 @@
     editing = term.id; byId("school-term").value = term.name;
     subjects.replaceChildren(); term.subjects.forEach(subject => addSubject(subject));
     byId("save-school-term").textContent = "Update term"; byId("cancel-school-edit").hidden = false;
+    window.dispatchEvent(new CustomEvent("gradepath-edit-results", { detail: "school-form" }));
     byId("school-term").focus(); status("school-status", "Editing " + term.name + ".");
   }
   byId("add-school-subject").addEventListener("click", () => addSubject({}, true));
@@ -55,7 +56,7 @@
   });
   function render() {
     const summary = C.schoolSummary(state.schoolTerms);
-    byId("school-average").textContent = summary.average === null ? "—" : summary.average.toFixed(1) + "%";
+    byId("school-average").textContent = summary.average === null ? "No terms yet" : summary.average.toFixed(1) + "%";
     byId("school-change").textContent = summary.average === null ? "Save your first term to get started." :
       state.schoolTerms.at(-1).name + (summary.change === null ? " · Latest term average" : " · " + (summary.change > 0 ? "+" : "") + summary.change.toFixed(1) + " percentage points from the previous term");
     renderList("school-history", state.schoolTerms.map((term, index) => {

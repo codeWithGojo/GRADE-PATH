@@ -5,43 +5,139 @@
   const root = document.documentElement;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const sidebar = document.querySelector(".sidebar");
+  const phone = matchMedia("(max-width: 899px)");
+  const profile = byId("profile-sheet");
+  const entry = byId("entry-sheet");
   const panel = byId("workspace-menu");
-  const toggles = [byId("menu-toggle"), byId("dock-menu")];
-  let menuTrigger;
+  const profileButton = byId("menu-toggle");
+  const panelAnchor = document.createComment("Profile tools");
+  panel.before(panelAnchor);
   sidebar.classList.add("enhanced-nav");
 
-  function closeMenu(restoreFocus = false) {
-    sidebar.classList.remove("menu-open");
-    toggles.forEach(button => button.setAttribute("aria-expanded", "false"));
-    if (restoreFocus) menuTrigger?.focus();
+  profileButton.addEventListener("click", () => {
+    if (!phone.matches) return;
+    profile.append(panel);
+    profile.showModal();
+    profileButton.setAttribute("aria-expanded", "true");
+  });
+  profile.addEventListener("close", () => {
+    panelAnchor.after(panel);
+    profileButton.setAttribute("aria-expanded", "false");
+  });
+  for (const sheet of [profile, entry]) {
+    sheet.addEventListener("click", event => {
+      if (event.target === sheet || event.target.closest("[data-sheet-close]")) sheet.close();
+    });
   }
 
-  toggles.forEach(button => button.addEventListener("click", () => {
-    if (sidebar.classList.contains("menu-open")) {
-      closeMenu(true);
-      return;
-    }
-    menuTrigger = button;
-    sidebar.classList.add("menu-open");
-    toggles.forEach(toggle => toggle.setAttribute("aria-expanded", "true"));
-    (panel.querySelector('a[aria-current="page"]') || panel.querySelector("a")).focus({ preventScroll: true });
-  }));
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && sidebar.classList.contains("menu-open")) closeMenu(true);
+  const steps = document.createElement("div");
+  steps.className = "entry-steps";
+  const back = GP.clickButton("Back", () => moveStep(-1));
+  const next = GP.clickButton("Next", () => moveStep(1));
+  const counter = GP.el("span");
+  counter.setAttribute("role", "status");
+  steps.append(back, counter, next);
+  let activeForm;
+  let anchor;
+  let items;
+  let position = 0;
+
+  function refreshSteps() {
+    const rows = [...items.children];
+    position = Math.max(0, Math.min(position, rows.length - 1));
+    rows.forEach((row, index) => { row.hidden = index !== position; });
+    back.disabled = position === 0;
+    next.disabled = position >= rows.length - 1;
+    counter.textContent = (activeForm.id === "grade-form" ? "Course " : "Subject ") + (position + 1) + " of " + rows.length;
+  }
+
+  function moveStep(delta) {
+    const current = items.children[position];
+    if (delta > 0 && [...current.querySelectorAll("input,select")].some(control => !control.reportValidity())) return;
+    position += delta;
+    refreshSteps();
+    items.children[position]?.querySelector("input")?.focus();
+  }
+
+  const observer = new MutationObserver(records => {
+    if (!activeForm) return;
+    const added = records.flatMap(record => [...record.addedNodes]).find(node => node.contains(document.activeElement));
+    if (added) position = [...items.children].indexOf(added);
+    refreshSteps();
+  });
+
+  function openEntry(id) {
+    if (!phone.matches || entry.open) return;
+    activeForm = byId(id);
+    items = byId(id === "grade-form" ? "grade-courses" : "school-subjects");
+    anchor = document.createComment("Result form");
+    activeForm.before(anchor);
+    entry.append(activeForm);
+    items.after(steps);
+    position = 0;
+    refreshSteps();
+    observer.observe(items, { childList: true });
+    entry.showModal();
+  }
+
+  entry.addEventListener("invalid", event => {
+    if (!activeForm || !items.contains(event.target)) return;
+    position = [...items.children].findIndex(row => row.contains(event.target));
+    refreshSteps();
+  }, true);
+  entry.addEventListener("close", () => {
+    observer.disconnect();
+    [...items.children].forEach(row => { row.hidden = false; });
+    steps.remove();
+    anchor.replaceWith(activeForm);
+    activeForm = null;
   });
   document.addEventListener("click", event => {
-    if (!panel.contains(event.target) && !toggles.some(button => button.contains(event.target))) closeMenu();
+    const trigger = event.target.closest("[data-entry]");
+    if (!phone.matches || !trigger?.dataset.entry) return;
+    event.preventDefault();
+    const id = trigger.dataset.entry;
+    if (trigger.hash && GP.page() !== trigger.hash.slice(1)) {
+      GP.go(trigger.hash.slice(1));
+      window.addEventListener("hashchange", () => openEntry(id), { once: true });
+    } else openEntry(id);
   });
-  window.matchMedia("(min-width: 900px)").addEventListener("change", () => closeMenu());
-  document.querySelectorAll(".nav a, .wordmark, .phone-dock a").forEach(anchor => {
-    anchor.addEventListener("click", () => {
-      const wasOpen = sidebar.classList.contains("menu-open");
-      closeMenu();
-      if (wasOpen && anchor.hash === location.hash) {
-        byId(GP.page()).querySelector("h1").focus({ preventScroll: true });
-      }
-    });
+  window.addEventListener("gradepath-edit-results", event => openEntry(event.detail));
+  phone.addEventListener("change", () => {
+    if (profile.open) profile.close();
+    if (entry.open) entry.close();
   });
+
+  let swipe;
+  document.addEventListener("touchstart", event => {
+    swipe = null;
+    if (!phone.matches || event.touches.length !== 1 || profile.open || entry.open ||
+      event.target.closest("input,textarea,select,button,a,iframe")) return;
+    const point = event.touches[0];
+    if (point.clientX < 24 || point.clientX > innerWidth - 24) return;
+    swipe = { x: point.clientX, y: point.clientY, target: event.target };
+  }, { passive: true });
+  document.addEventListener("touchcancel", () => { swipe = null; });
+  document.addEventListener("touchend", event => {
+    const start = swipe;
+    swipe = null;
+    if (!start) return;
+    const point = event.changedTouches[0];
+    const delta = point.clientX - start.x;
+    if (Math.abs(delta) < 75 || Math.abs(delta) < 2 * Math.abs(point.clientY - start.y)) return;
+    const task = start.target.closest("#tasks .row");
+    if (task) {
+      const check = task.querySelector('input[type="checkbox"]');
+      if (delta > 0 && check && !check.checked) check.click();
+      return;
+    }
+    const links = [...document.querySelectorAll(".phone-dock a:not([hidden])")];
+    const active = links.findIndex(link => link.hasAttribute("aria-current"));
+    if (active >= 0) {
+      const nextTab = links[active + (delta < 0 ? 1 : -1)];
+      if (nextTab) GP.go(nextTab.hash.slice(1));
+    }
+  }, { passive: true });
 
   const icons = {
     overview: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -55,8 +151,8 @@
     tutor: '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>',
     account: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>'
   };
-  document.querySelectorAll(".nav a, .phone-dock a, #dock-menu").forEach(anchor => {
-    const shape = anchor.id === "dock-menu" ? '<path d="M4 6h16M4 12h16M4 18h16"/>' : icons[anchor.hash.slice(1)]; if (!shape) return;
+  document.querySelectorAll(".nav a, .phone-dock a").forEach(anchor => {
+    const shape = icons[anchor.hash.slice(1)]; if (!shape) return;
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor"); svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round"); svg.setAttribute("aria-hidden", "true"); svg.classList.add("nav-icon"); svg.innerHTML = shape; anchor.prepend(svg);
   });
@@ -111,16 +207,23 @@
   window.addEventListener("scroll", () => { if (!pending) { pending = true; requestAnimationFrame(scrollState); } }, { passive: true });
   window.addEventListener("resize", scrollState);
   byId("back-to-top").addEventListener("click", () => { window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "instant" : "smooth" }); byId(GP.page()).querySelector("h1").focus({ preventScroll: true }); });
-  onPage(() => { closeMenu(); requestAnimationFrame(scrollState); });
+  onPage(() => {
+    if (profile.open) profile.close();
+    if (entry.open) entry.close();
+    requestAnimationFrame(scrollState);
+  });
+  document.querySelectorAll(".nav a").forEach(link => link.addEventListener("click", () => {
+    if (profile.open) profile.close();
+  }));
   onChange(() => requestAnimationFrame(scrollState));
   // Content is never hidden while waiting for JavaScript or an observer callback.
   if ("IntersectionObserver" in window) {
     const observer = new IntersectionObserver(entries => {
       for (const entry of entries) if (entry.isIntersecting) {
-        if (!reduceMotion.matches) entry.target.animate([{ opacity: .35, transform: "translateY(12px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 400, easing: "cubic-bezier(.22,1,.36,1)" });
+        if (!reduceMotion.matches) entry.target.animate([{ opacity: .35, transform: "translateY(12px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 180, easing: "cubic-bezier(.22,1,.36,1)" });
         observer.unobserve(entry.target);
       }
     }, { threshold: .08 });
-    document.querySelectorAll(".path-strip, #overview > .split, .workspace-footer").forEach(element => observer.observe(element));
+    document.querySelectorAll("#overview > .split").forEach(element => observer.observe(element));
   }
 })();

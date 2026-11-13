@@ -56,8 +56,8 @@
   function renderExam() {
     const current = state.exams[active];
     const info = C.examInsights(current || { subjects: [] }, active);
-    const mark = active === "JAMB" ? (info.fullMock ? info.total + " / 400" : "—")
-      : info.mean === null ? "—" : info.mean.toFixed(1) + " / 100";
+    const mark = active === "JAMB" ? (info.fullMock ? info.total + " / 400" : "Enter four mock scores")
+      : info.mean === null ? "No mock scores yet" : info.mean.toFixed(1) + " / 100";
     byId("exam-mock").textContent = mark;
     const date = current?.date ? " · Exam " + C.dateText(current.date) : "";
     const goal = current?.target;
@@ -121,6 +121,13 @@
     dirty = false;
     renderExam();
   }
+
+  byId("hero-results-link").addEventListener("click", event => {
+    const exam = event.currentTarget.dataset.exam;
+    if (event.currentTarget.hash === "#exams" && exam && exam !== active) {
+      document.querySelector('[data-exam="' + exam + '"]')?.click();
+    }
+  });
 
   document.querySelectorAll("[data-exam]").forEach(button => {
     button.addEventListener("click", () => {

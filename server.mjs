@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { timingSafeEqual } from "node:crypto";
 import { parseArgs } from "node:util";
+import Core from "./core.js";
 import { settings } from "./server/config.mjs";
 import {
   AppError, clean, createDatabase, createUser, verifyUser, issueSession, userFromSession,
@@ -104,7 +105,7 @@ export function createApp(config, fetcher = globalThis.fetch) {
   function serviceStatus(user) {
     const allowance = user ? tutor.allowance(user.id) : null;
     return {
-      online: true, aiConfigured: Boolean(config.ai.key), billingMode: config.payment.enabled ? config.payment.mode : "",
+      online: true, workspaceBackup: true, aiConfigured: Boolean(config.ai.key), billingMode: config.payment.enabled ? config.payment.mode : "",
       inviteRequired: Boolean(config.inviteCode),
       account: user ? {
         email: user.email, billing: billing.summary(user.id),
@@ -167,6 +168,25 @@ export function createApp(config, fetcher = globalThis.fetch) {
       response.setHeader("Set-Cookie", clearSession(db, request, origin.startsWith("https:")));
       json(response, 200, serviceStatus(null));
       return;
+    }
+    if (pathname === "/api/workspace") {
+      if (method === "GET") {
+        const saved = db.prepare("SELECT data, updated FROM workspace_backups WHERE user_id=?").get(user.id);
+        json(response, 200, { backup: saved ? JSON.parse(saved.data) : null, updated: saved?.updated ?? null });
+        return;
+      }
+      if (method === "PUT") {
+        limit("workspace-" + user.id, 20, 60_000);
+        const input = await jsonBody(request, 3_500_000);
+        let data;
+        try { data = Core.normalizeState(input.backup); }
+        catch { throw new AppError(400, "Choose a valid GradePath backup."); }
+        const updated = Date.now();
+        db.prepare("INSERT INTO workspace_backups VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET data=excluded.data, updated=excluded.updated")
+          .run(user.id, JSON.stringify(data), updated);
+        json(response, 200, { updated });
+        return;
+      }
     }
     if (pathname === "/api/benchmark") {
       if (method === "GET") { json(response, 200, { result: getBenchmark(db, user.id) }); return; }

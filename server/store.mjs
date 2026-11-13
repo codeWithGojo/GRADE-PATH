@@ -45,6 +45,10 @@ export function createDatabase(path) {
     CREATE TABLE IF NOT EXISTS sessions (
       hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS workspace_backups (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      data TEXT NOT NULL, updated INTEGER NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS benchmarks (
       user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, school TEXT NOT NULL, programme TEXT NOT NULL,
       level TEXT NOT NULL, scale INTEGER NOT NULL, grading TEXT NOT NULL, cgpa INTEGER NOT NULL
