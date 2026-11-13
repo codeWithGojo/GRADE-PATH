@@ -18,6 +18,7 @@
   <script src="lab.js" defer></script>
   <script src="online.js" defer></script>
   <script src="school.js" defer></script>
+  <script src="projects.js" defer></script>
   <script src="experience.js" defer></script>
 </head>
 <body>
@@ -41,6 +42,7 @@
           <a href="#grades" data-mode-only="university">Grades &amp; targets</a>
           <a href="#school" data-mode-only="secondary" hidden>School results</a>
           <a href="#exams" data-mode-only="secondary" hidden>Exam preparation</a>
+          <a href="#projects" data-mode-only="university">Final Year Projects</a>
           <a href="#study">Study Room</a>
           <a href="#practice">Practice</a>
           <a href="#coding">Coding Lab</a>
@@ -99,6 +101,7 @@
             <a href="#study"><span class="path-number" aria-hidden="true">02</span><span><strong>Plan revision</strong><small>Turn weak spots into next steps</small></span><svg class="path-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a>
             <a href="#practice"><span class="path-number" aria-hidden="true">03</span><span><strong>Take a quiz</strong><small>Test yourself, review, repeat</small></span><svg class="path-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14"/></svg></a>
           </div>
+          <a class="project-entry" href="#projects" data-mode-only="university"><strong>Final Year Projects</strong><span>Find a topic, plan your build or get a Dev Boyz quote →</span></a>
           <div class="metric-row">
             <div class="metric"><span>Study tasks this week</span><strong id="metric-tasks">0 / 0</strong><small id="metric-minutes">0 min completed</small></div>
             <div class="metric"><span>Latest quiz</span><strong id="metric-quiz">—</strong><small id="metric-quiz-label">Try a practice set</small></div>
@@ -113,6 +116,50 @@
               <div class="section-head"><h2 id="strength-title">Subject strengths</h2><a id="strength-results-link" href="#grades">View results</a></div>
               <div id="strengths" class="list"></div>
             </section>
+          </div>
+        </section>
+
+        <section class="page" id="projects" aria-labelledby="projects-heading" hidden>
+          <div class="page-heading">
+            <h1 id="projects-heading" tabindex="-1">Final Year Projects</h1>
+            <p>Find a topic for IT, Computer Science or Software Engineering, plan your build, and get support from Dev Boyz.</p>
+          </div>
+          <div class="split wide-left">
+            <section class="card">
+              <h2>Find a project idea</h2>
+              <div class="fields two">
+                <label class="field">Project area <select id="project-area"><option value="">All areas</option><option>Web</option><option>Data</option><option>IoT</option></select></label>
+                <label class="field">Difficulty <select id="project-level"><option value="">All levels</option><option>Beginner</option><option>Intermediate</option></select></label>
+              </div>
+              <div id="project-ideas" class="list"></div>
+            </section>
+            <div class="stack">
+              <section class="card">
+                <h2>Project tracker</h2>
+                <form id="project-plan">
+                  <label class="field">Your project title <input id="project-title" maxlength="120" required></label>
+                  <label class="field">Next milestone <input id="project-milestone" maxlength="150" placeholder="e.g. Review proposal with my supervisor"></label>
+                  <label class="field">Milestone due date <input id="project-date" type="date"></label>
+                  <button class="primary" type="submit">Save project plan</button>
+                </form>
+                <p id="project-status" class="status" role="status"></p>
+                <div id="project-milestones" class="list"></div>
+              </section>
+              <section class="card" id="project-quote">
+                <h2>Get a quote from Dev Boyz</h2>
+                <p class="help">Request a working prototype, hardware setup, help with a module, or a walkthrough. Quotes depend on scope and are separate from GradePath Plus. Check your department’s rules for outside assistance.</p>
+                <form id="project-enquiry">
+                  <label class="field">Project topic <input id="quote-topic" maxlength="120" required></label>
+                  <div class="fields two">
+                    <label class="field">Deadline <input id="quote-deadline" type="date"></label>
+                    <label class="field">Budget (₦) <input id="quote-budget" type="number" min="0" step="1" max="100000000"></label>
+                  </div>
+                  <label class="field">What should Dev Boyz help you build? <textarea id="quote-scope" rows="4" maxlength="600" required></textarea></label>
+                  <button class="primary" type="submit">Open WhatsApp enquiry</button>
+                  <p class="help">Review and send the drafted message in WhatsApp.</p>
+                </form>
+              </section>
+            </div>
           </div>
         </section>
 

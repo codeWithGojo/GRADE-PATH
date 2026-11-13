@@ -45,6 +45,7 @@
 
   const icons = {
     overview: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    projects: '<path d="M3 7h7l2 2h9v11H3zM3 7V4h7l2 3h7v2"/>',
     grades: '<path d="M4 20V4m0 16h17M8 16v-5m5 5V7m5 9V3"/>',
     school: '<path d="M5 3h11l3 3v15H5zM8 8h5m-5 5h8m-8 4h8"/>',
     exams: '<path d="M8 4H5v17h14V4h-3M8 2h8v5H8zM8 12h8m-8 4h5"/>',

@@ -497,3 +497,22 @@ meter::-moz-meter-bar { background: var(--blue); }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+.project-entry {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--soft);
+  color: var(--blue-dark);
+  text-decoration: none;
+}
+.project-entry span, .project-meta { font-size: .85rem; }
+.project-idea { padding-block: 12px; border-top: 1px solid var(--line); }
+.project-idea > p { margin-top: 5px; }
+.project-meta { color: var(--muted); }
+.project-idea .quiet { padding-inline: 10px; border-color: var(--line); }
+#project-plan .field, #project-enquiry > .field { margin-bottom: 12px; }
+.project-milestone { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.project-milestone .check { flex: 1 1 170px; min-width: 0; overflow-wrap: anywhere; }

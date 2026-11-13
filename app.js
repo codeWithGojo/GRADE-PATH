@@ -133,7 +133,7 @@
 
   function page() {
     const current = location.hash.slice(1);
-    const allowed = state.mode === "secondary" ? current !== "grades" : !["school", "exams"].includes(current);
+    const allowed = state.mode === "secondary" ? !["grades", "projects"].includes(current) : !["school", "exams"].includes(current);
     return Object.hasOwn(pageNames, current) && allowed ? current : "overview";
   }
 

@@ -17,7 +17,7 @@ import { createBilling } from "./server/billing.mjs";
 const root = fileURLToPath(new URL(".", import.meta.url));
 const staticFiles = new Map([
   ["/", "index.html"], ["/index.html", "index.html"], ["/styles.css", "styles.css"],
-  ...["core", "catalog", "app", "grades", "study", "exams", "lab", "online", "school", "experience", "appearance"].map(name => ["/" + name + ".js", name + ".js"]),
+  ...["core", "catalog", "app", "grades", "study", "exams", "lab", "online", "school", "projects", "experience", "appearance"].map(name => ["/" + name + ".js", name + ".js"]),
   ["/runner.html", "runner.html"], ...["sora.woff", "inter.woff"].map(name => ["/vendor/fonts/" + name, "vendor/fonts/" + name]), ["/favicon.svg", "favicon.svg"], ["/vendor/pdf.min.mjs", "vendor/pdf.min.mjs"],
   ["/vendor/pdf.worker.min.mjs", "vendor/pdf.worker.min.mjs"]
 ]);

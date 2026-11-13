@@ -67,7 +67,7 @@
       version: 3, mode: "university", schoolClass: "SS 3", schoolTarget: 75, schoolTerms: [],
       scale: 5, points: { ...gradeDefaults[5] }, replace: false, semesters: [],
       profiles: [], materials: [], notes: [], tasks: [], questions: [], attempts: [], mistakes: [],
-      labDrafts: {}, labPassed: [], assessment: null, exams: {}, selectedExam: "WAEC"
+      project: { title: "", milestones: [] }, labDrafts: {}, labPassed: [], assessment: null, exams: {}, selectedExam: "WAEC"
     };
   }
 
@@ -107,6 +107,11 @@
       id: clean(term?.id, 90) || id(), name: clean(term?.name, 60),
       subjects: schoolSubjects(term?.subjects)
     })).filter(term => term.name && term.subjects.length);
+    state.project.title = clean(source.project?.title, 120);
+    state.project.milestones = shortList(source.project?.milestones, 30).map(item => ({
+      id: clean(item?.id, 90) || id(), title: clean(item?.title, 150),
+      date: validDate(item?.date) ? item.date : "", done: item?.done === true
+    })).filter(item => item.title);
     state.scale = source.scale;
     state.replace = source.replace === true;
     state.points = Object.fromEntries(letters.map(letter => {
