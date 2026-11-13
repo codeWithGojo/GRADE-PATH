@@ -393,15 +393,31 @@ meter::-moz-meter-bar { background: var(--blue); }
 .project-milestone .check { flex: 1 1 170px; min-width: 0; overflow-wrap: anywhere; }
 
 /* Results and study activity are the dashboard. */
-.home-header { display: grid; gap: 7px; }
-.home-header p:empty { display: none; }
-.home-header h1 { font-size: clamp(1.9rem, 5vw, 3rem); }
-.home-summary { border-block: 1px solid var(--line); }
+.home-hero {
+  display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  align-items: center; gap: clamp(14px, 3vw, 36px);
+  padding: clamp(24px, 3.8vw, 54px); border-radius: 24px;
+  background: radial-gradient(ellipse at 86% 15%, #2d4691, transparent 64%), linear-gradient(120deg, #101a38, #1c3067);
+  color: #f8faff;
+}
+.home-header { display: grid; justify-items: start; gap: 13px; min-width: 0; }
+.home-header h1 { font-size: clamp(2.1rem, 4.35vw, 3.75rem); line-height: 1.03; text-wrap: balance; }
+#today-label { color: #bdceff; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; }
+#overview-intro { max-width: 38ch; color: #d8e3ff; line-height: 1.55; }
+.home-action { margin-top: 5px; }
+.home-action .button { min-height: 46px; padding-inline: 16px; gap: 14px; background: #e7eeff; border-color: #e7eeff; color: #16264e; }
+.home-action .button [aria-hidden] { font-size: 1.14rem; }
+.home-hero :focus-visible { outline-color: #a2f3df; }
+.home-path { display: block; width: 100%; max-width: 480px; justify-self: end; }
+.home-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); border: 1px solid var(--line); border-radius: var(--radius); background: var(--white); padding: 0 20px; }
+.home-summary:has(.home-score[hidden]) { grid-template-columns: 1fr; }
 .home-score { display: grid; gap: 4px; padding: 16px 0; color: var(--ink); text-decoration: none; }
+.home-score:hover small { text-decoration: underline; }
 .home-score strong { font: 700 clamp(2rem, 8vw, 3.5rem)/1.05 Sora, system-ui, sans-serif; font-variant-numeric: tabular-nums; }
 .home-score small { color: var(--blue-dark); }
-.home-agenda { margin: 0; }
-.home-agenda div { display: grid; gap: 3px; padding: 11px 0; border-top: 1px solid var(--line); }
+.home-agenda { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; }
+.home-agenda div { display: grid; align-content: center; gap: 3px; padding: 14px; }
+.home-score:not([hidden]) ~ .home-agenda { margin-inline-start: 20px; border-inline-start: 1px solid var(--line); }
 .home-agenda dt { color: var(--muted); font-size: .82rem; }
 .home-agenda dd { margin: 0; overflow-wrap: anywhere; }
 .home-activity { display: grid; gap: 8px; }
@@ -411,6 +427,34 @@ meter::-moz-meter-bar { background: var(--blue); }
 #activity-grid [data-activity="2"] { background: var(--blue); opacity: .72; }
 #activity-grid [data-activity="3"] { background: var(--blue); }
 .home-details > .card { background: transparent; box-shadow: none; border-width: 1px 0 0; border-radius: 0; padding-inline: 0; }
+.home-tools { display: grid; gap: 12px; }
+.home-tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.home-tool { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; align-content: start; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); background: var(--white); text-decoration: none; }
+.home-tool:hover { border-color: var(--focus); background: var(--soft); }
+.home-tool > span:last-child { grid-column: 2; color: var(--muted); font-size: .87rem; }
+.home-tool-number { align-self: start; padding: 3px 6px; border-radius: 6px; background: var(--soft); color: var(--blue-dark); font: 700 .71rem/1.2 Sora, system-ui, sans-serif; }
+@media (max-width: 700px) {
+  .home-hero, .home-tool-grid, .home-summary { grid-template-columns: 1fr; }
+  .home-hero { border-radius: 20px; }
+  .home-header h1 { font-size: clamp(1.95rem, 8.8vw, 3rem); }
+  .home-path { max-width: 320px; justify-self: center; }
+  .home-score:not([hidden]) ~ .home-agenda { margin-inline-start: 0; border-inline-start: 0; }
+  .home-agenda { grid-template-columns: 1fr; }
+  .home-agenda div { padding-inline: 0; border-top: 1px solid var(--line); }
+  .home-summary:has(.home-score[hidden]) .home-agenda div:first-child { border-top: 0; }
+}
+@media (max-width: 480px) {
+  .home-hero { gap: 8px; padding-block: 21px 14px; }
+  .home-path { max-width: 275px; }
+  .home-tool { padding: 13px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .home-path-line { animation: home-draw 850ms 100ms var(--ease-smooth-out) both; }
+  .home-path-node, .home-path-labels { animation: home-fade 380ms 340ms ease-out both; }
+  @keyframes home-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @keyframes home-fade { from { opacity: 0; } to { opacity: 1; } }
+  .home-path-line { stroke-dasharray: 1; }
+}
 .phone-sheet, .open-entry, .entry-steps { display: none; }
 #project-quote { background: var(--paper); border-style: dashed; }
 #future-slider { accent-color: var(--blue); }
@@ -453,12 +497,7 @@ meter::-moz-meter-bar { background: var(--blue); }
   #entry-sheet form > .actions { padding-block: 9px; background: var(--white); border-top: 1px solid var(--line); }
   #entry-sheet :is(#grade-result,#school-status) { padding-bottom: 8px; }
   .entry-steps { position: sticky; bottom: -16px; z-index: 1; padding-bottom: calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
-  .home-action { position: fixed; z-index: 30; bottom: calc(var(--dock-height) + env(safe-area-inset-bottom)); inset-inline: 0; background: var(--white); border-top: 1px solid var(--line); padding: 8px var(--phone-gutter); }
-  .home-action .button { display: flex; width: 100%; min-height: 48px; }
-  #overview:not([hidden]) { padding-bottom: 68px; }
-  body:has(#overview:not([hidden])) .back-top { bottom: calc(var(--dock-height) + env(safe-area-inset-bottom) + 75px); }
   .workspace-footer { padding-bottom: calc(var(--dock-height) + env(safe-area-inset-bottom) + 32px); }
-  body:has(#overview:not([hidden])) .workspace-footer { padding-bottom: calc(var(--dock-height) + env(safe-area-inset-bottom) + 100px); }
   body:has(dialog[open]) { overflow: hidden; }
 }
 @media (prefers-reduced-motion: no-preference) {

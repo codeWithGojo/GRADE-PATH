@@ -210,11 +210,13 @@
     const lastQuiz = state.attempts.find(attempt => school ? Boolean(attempt.exam) : !attempt.exam);
     const priorities = C.priorityList(state, today);
     const action = byId("hero-results-link");
-    byId("overview-heading").textContent = revision ? "Time to revise" : hasResults ? "Today" : school ? "Add your term results" : "Add your grades";
+    byId("overview-heading").textContent = revision ? "Time to revise" : hasResults ? "Your study overview" : "Plan your next move";
     byId("overview-intro").textContent = revision
       ? exam.name + (days === 0 ? " is today. Review your priority topics." : " is in " + days + (days === 1 ? " day." : " days."))
-      : hasResults ? "" : school ? "Start with the marks from your latest term." : "Add a semester to see your CGPA.";
-    action.textContent = revision ? "Start revision" : !hasResults ? (school ? "Add term results" : "Add grades") : tasks.length ? "Open today’s tasks" : "Plan a study session";
+      : hasResults ? "Check your results, upcoming assessments and study tasks." : school
+        ? "Record your latest term results to see how you’re doing across subjects."
+        : "Add a semester to see your CGPA and plan what grades you need next.";
+    byId("hero-action-label").textContent = revision ? "Start revision" : !hasResults ? (school ? "Add term results" : "Add grades") : tasks.length ? "Open today’s tasks" : "Plan a study session";
     action.href = revision ? (school ? "#exams" : "#study") : !hasResults ? (school ? "#school" : "#grades") : "#study";
     action.dataset.entry = !hasResults && !revision ? (school ? "school-form" : "grade-form") : "";
     byId("home-summary").hidden = !hasResults && !revision;

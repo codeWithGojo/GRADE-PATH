@@ -83,12 +83,29 @@
 
         <!-- Overview -->
         <section class="page" id="overview" aria-labelledby="overview-heading">
-          <header class="home-header">
-            <p id="today-label" class="secondary"></p>
-            <h1 id="overview-heading" tabindex="-1">Today</h1>
-            <p id="overview-intro"></p>
+          <header class="home-hero">
+            <div class="home-header">
+              <p id="today-label"></p>
+              <h1 id="overview-heading" tabindex="-1">Plan your next move</h1>
+              <p id="overview-intro">Add a semester to see your CGPA and plan what grades you need next.</p>
+              <div class="home-action"><a class="button primary" id="hero-results-link" href="#grades"><span id="hero-action-label">Add grades</span><span aria-hidden="true">→</span></a></div>
+            </div>
+            <svg class="home-path" viewBox="0 0 420 222" aria-hidden="true" focusable="false">
+              <defs>
+                <pattern id="home-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#96afff" stroke-opacity=".2"/></pattern>
+                <linearGradient id="home-line" x2="1" y2="0"><stop stop-color="#799bff"/><stop offset="1" stop-color="#a2f3df"/></linearGradient>
+                <radialGradient id="home-light"><stop stop-color="#89a3ff" stop-opacity=".28"/><stop offset="1" stop-color="#89a3ff" stop-opacity="0"/></radialGradient>
+              </defs>
+              <rect x="6" y="14" width="406" height="192" rx="20" fill="url(#home-grid)" stroke="#96afff" stroke-opacity=".24"/>
+              <ellipse cx="300" cy="76" rx="125" ry="78" fill="url(#home-light)"/>
+              <path class="home-path-line" pathLength="1" d="M49 162C115 162 123 107 194 107S257 52 344 52" fill="none" stroke="url(#home-line)" stroke-width="3" stroke-linecap="round"/>
+              <g class="home-path-node" fill="#1a2d62" stroke="#a8bcff" stroke-width="2"><circle cx="49" cy="162" r="7"/><circle cx="194" cy="107" r="7"/></g>
+              <g class="home-path-node"><circle cx="344" cy="52" r="20" fill="#a2f3df" fill-opacity=".15"/><circle cx="344" cy="52" r="9" fill="#a2f3df"/></g>
+              <g class="home-path-labels" fill="#e5edff" font-family="system-ui, sans-serif" font-size="14" font-weight="650">
+                <text x="35" y="190">Track</text><text x="181" y="134">Plan</text><text x="319" y="91">Practise</text>
+              </g>
+            </svg>
           </header>
-          <div class="home-action"><a class="button primary" id="hero-results-link" href="#grades">Add grades</a></div>
           <div id="home-summary" class="home-summary" hidden>
             <a class="home-score" id="home-breakdown" href="#grades">
               <span id="hero-score-label">Current CGPA</span>
@@ -116,6 +133,15 @@
               <div id="strengths" class="list"></div>
             </section>
           </div>
+          <section class="home-tools" aria-labelledby="home-tools-title">
+            <h2 id="home-tools-title">Your study tools</h2>
+            <div class="home-tool-grid">
+              <a class="home-tool" href="#grades" data-mode-only="university"><span class="home-tool-number" aria-hidden="true">01</span><strong>Grades &amp; targets</strong><span>Calculate your CGPA and see what you need next.</span></a>
+              <a class="home-tool" href="#school" data-mode-only="secondary" hidden><span class="home-tool-number" aria-hidden="true">01</span><strong>School results</strong><span>Track your marks and see which subjects need attention.</span></a>
+              <a class="home-tool" href="#study"><span class="home-tool-number" aria-hidden="true">02</span><strong>Study Room</strong><span>Plan revision and keep track of study tasks.</span></a>
+              <a class="home-tool" href="#practice"><span class="home-tool-number" aria-hidden="true">03</span><strong>Practice</strong><span>Try a quiz and find topics to review.</span></a>
+            </div>
+          </section>
         </section>
 
         <section class="page" id="projects" aria-labelledby="projects-heading" hidden>
