@@ -3,11 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Track your CGPA, plan revision, practise questions, and learn to code with GradePath.">
+  <meta name="description" content="Calculate your CGPA on a 5.0 or 4.0 scale and see what GPA you need across your remaining units. No signup required.">
+  <link rel="canonical" href="https://gradepath-theta.vercel.app/">
   <meta name="theme-color" content="#101526">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <script src="appearance.js"></script>
-  <title>GradePath · Study planner</title>
+  <title>CGPA Calculator for Nigerian Universities (5.0 and 4.0) | GradePath</title>
   <link rel="stylesheet" href="styles.css">
   <script src="core.js" defer></script>
   <script src="catalog.js" defer></script>
@@ -50,7 +51,6 @@
           <a href="#account">Account &amp; Plus</a>
         </nav>
         <div class="sidebar-foot">
-          <a href="#account" class="plus-link"><span>GradePath Plus</span><strong>₦1,000 <small>/ month</small></strong><span class="plus-hint">AI study support · Coming soon</span></a>
           <span id="sidebar-mode">On this device</span>
           <button id="export-data" class="text-button" type="button">Export study data</button>
           <label class="text-button upload-label" for="import-data">Import a backup</label>
@@ -85,10 +85,10 @@
         <section class="page" id="overview" aria-labelledby="overview-heading">
           <header class="home-hero">
             <div class="home-header">
-              <h1 id="overview-heading" tabindex="-1">Plan your next move</h1>
+              <h1 id="overview-heading" tabindex="-1">CGPA calculator</h1>
               <p id="today-label"></p>
               <p id="overview-intro">Add a semester to see your CGPA and plan what grades you need next.</p>
-              <div class="home-action"><a class="button primary" id="hero-results-link" href="#grades"><span id="hero-action-label">Add grades</span><span aria-hidden="true">→</span></a></div>
+              <div class="home-action"><a class="button primary" id="hero-results-link" href="#grades"><span id="hero-action-label">Calculate CGPA</span><span aria-hidden="true">→</span></a> <a class="button" id="home-sample" href="#grades" data-mode-only="university">Try a sample semester</a></div>
             </div>
             <svg class="home-path" viewBox="0 0 420 222" aria-hidden="true" focusable="false">
               <defs>
@@ -170,20 +170,6 @@
                 <p id="project-status" class="status" role="status"></p>
                 <div id="project-milestones" class="list"></div>
               </section>
-              <section class="card" id="project-quote">
-                <h2>Dev Boyz project quotes</h2>
-                <p class="help">Request a working prototype, hardware setup, help with a module, or a walkthrough. Dev Boyz handles these quotes and any project work separately. GradePath Plus does not include project services. Check your department’s rules for outside assistance.</p>
-                <form id="project-enquiry">
-                  <label class="field">Project topic <input id="quote-topic" maxlength="120" required></label>
-                  <div class="fields two">
-                    <label class="field">Deadline <input id="quote-deadline" type="date"></label>
-                    <label class="field">Budget (₦) <input id="quote-budget" type="number" inputmode="decimal" min="0" step="1" max="100000000"></label>
-                  </div>
-                  <label class="field">What should Dev Boyz help you build? <textarea id="quote-scope" rows="4" maxlength="600" required></textarea></label>
-                  <button class="primary" type="submit">Open WhatsApp enquiry</button>
-                  <p class="help">Review and send the drafted message in WhatsApp.</p>
-                </form>
-              </section>
             </div>
           </div>
         </section>
@@ -194,7 +180,7 @@
           <div class="split wide-left">
             <div class="stack">
               <section class="card">
-                <div class="section-head"><h2>Semester calculator</h2><button id="sample-grades" type="button" class="quiet">Try an example</button></div>
+                <div class="section-head"><h2>Semester calculator</h2><button id="sample-grades" type="button" class="quiet">Try a sample semester</button></div>
                 <button class="primary open-entry" type="button" data-entry="grade-form">Add grades</button>
                 <form id="grade-form">
                   <label class="field">Semester name <input id="term-name" maxlength="60" placeholder="e.g. 200 Level, First Semester"></label>
@@ -632,7 +618,7 @@
               <section class="card" data-mode-only="university">
                 <div class="section-head"><h2>Peer benchmark</h2><span class="tag">Opt-in</span></div>
                 <p class="help">Compare with participating students in the same school, programme, level, and grading setup. Results use self-reported grades.</p>
-                <p class="help">Privacy (NDPR): joining is optional. Your CGPA and cohort details are used to calculate your comparison. Other students see their own rank and the cohort size. Use Leave benchmark to remove your entry.</p>
+                <p class="help">Joining is optional. Your CGPA and cohort details are used to calculate your comparison. Ranks appear when at least 25 students participate. Use Leave benchmark to remove your entry.</p>
                 <form id="cohort-form">
                   <div class="fields">
                     <label class="field">School <input id="cohort-school" maxlength="90" placeholder="Bowen University" required></label>
@@ -646,18 +632,18 @@
                 </form>
               </section>
             </div>
-            <section class="card plus-card">
+            <section class="card plus-card" id="plus-plan" hidden>
               <h2>GradePath Plus</h2>
               <p class="price">₦1,000 <small>/ month</small></p>
               <ul><li>AI tutor for questions about your notes</li><li>Personalised practice questions</li><li>Coding hints and debugging walkthroughs</li></ul>
-              <p id="plus-status" class="help">Plus is planned at ₦1,000 per month. Subscriptions are coming soon.</p>
+              <p id="plus-status" class="help">Subscriptions are currently closed.</p>
               <div class="actions"><button id="checkout" class="primary" type="button" disabled hidden>Plus is coming soon</button><button id="manage-sub" type="button" hidden>Manage subscription</button></div>
               <p id="billing-status" class="status" role="status"></p>
             </section>
           </div>
         </section>
       </div>
-    <footer class="workspace-footer"><span>GradePath · Made for your next step.</span><span>Your work is saved in this browser.</span></footer>
+    <footer class="workspace-footer"><span>GradePath</span><span>Your work is saved in this browser.</span></footer>
     </main>
   </div>
 

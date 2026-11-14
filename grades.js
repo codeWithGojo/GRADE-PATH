@@ -55,9 +55,9 @@
   byId("add-grade-course").addEventListener("click", () => { addCourse(null, true); gradeStatus(""); });
   byId("cancel-edit").addEventListener("click", resetForm);
   gradeForm.addEventListener("input", () => gradeStatus(""));
-  byId("sample-grades").addEventListener("click", () => {
+  function loadSample() {
     if ((value("term-name") || gradeCourses.querySelector(".course-units:valid"))
-      && !window.confirm("Replace the current unsaved form with an example?")) return;
+      && !window.confirm("Replace the current unsaved form with an example?")) return false;
     resetForm();
     byId("term-name").value = "Example semester";
     gradeCourses.replaceChildren();
@@ -65,6 +65,17 @@
     addCourse({ code: "CSC102", subject: "Programming", units: 2, grade: "B" });
     addCourse({ code: "MAT101", subject: "Maths", units: 1, grade: "C" });
     gradeStatus("Example loaded. Click Calculate GPA to test it.");
+    return true;
+  }
+
+  byId("sample-grades").addEventListener("click", loadSample);
+  byId("home-sample").addEventListener("click", event => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    window.addEventListener("hashchange", () => {
+      if (loadSample()) window.dispatchEvent(new CustomEvent("gradepath-edit-results", { detail: "grade-form" }));
+    }, { once: true });
+    GP.go("grades");
   });
 
   gradeForm.addEventListener("submit", event => {

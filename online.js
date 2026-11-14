@@ -67,9 +67,9 @@
     }
     renderBenchmark();
 
-    byId("ai-mode-status").textContent = !session.online ? "Coming soon" : !session.aiConfigured
-      ? "Coming soon" : !account ? "Sign in to continue" : bill?.active ? "Plus" : "Free";
-    byId("tutor-access").textContent = !session.online ? "The AI tutor is coming soon. In the meantime, use the practice questions, study resources and Coding Lab hints."
+    byId("ai-mode-status").textContent = !session.online ? "Unavailable" : !session.aiConfigured
+      ? "Unavailable" : !account ? "Sign in to continue" : bill?.active ? "Plus" : "Free";
+    byId("tutor-access").textContent = !session.online ? "The AI tutor is unavailable here. You can still use practice questions and Coding Lab hints."
       : !session.aiConfigured ? "The AI tutor is not connected yet. You can keep using the study tools."
         : !account ? "Sign in for three free AI questions each day."
           : account.tutorRemaining ? account.tutorRemaining + " of " + account.tutorLimit + " requests left "
@@ -77,13 +77,13 @@
             : bill?.active ? "You’ve used your allowance for this paid period." : "You’ve used today’s three free questions. Come back tomorrow.";
     byId("ask-ai").disabled = !session.aiConfigured || !account?.tutorRemaining;
 
-    byId("plus-status").textContent = !session.billingMode ? "Plus is planned at ₦1,000 per month. Subscriptions are not open yet; no payment is collected here."
+    byId("plus-status").textContent = !session.billingMode ? "Subscriptions are currently closed."
       : (session.billingMode === "test" ? "Paystack test mode. " : "Billed monthly through Paystack. ")
         + (bill?.active ? "Access through " + new Date(bill.paidUntil).toLocaleDateString() + "."
           : bill?.pending ? "You have a payment waiting for confirmation."
             : bill?.hasSubscription ? "Manage your existing subscription to check its renewal."
               : account ? "Your plan renews monthly until cancelled." : "Sign in to subscribe.");
-    document.querySelector(".plus-hint").textContent = session.billingMode ? "AI study support" : "AI study support · Coming soon";
+    byId("plus-plan").hidden = !session.billingMode;
     const checkout = byId("checkout");
     checkout.hidden = !session.billingMode;
     checkout.disabled = !session.billingMode || !account || Boolean(bill?.active || bill?.hasSubscription || (bill?.pending && !bill?.canContinue));

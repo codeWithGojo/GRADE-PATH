@@ -9,7 +9,6 @@
     ["Classroom comfort monitor", "IoT", "Intermediate", "Hardware required", "4–7 weeks", "Use an ESP32 and a temperature and humidity sensor to log readings. Test sensor accuracy and what happens when Wi-Fi drops."],
     ["Water tank level dashboard", "IoT", "Intermediate", "Hardware required", "4–7 weeks", "Measure water levels on a small test rig with an ESP32 and a distance sensor. Compare readings with manual measurements."]
   ];
-  const contact = "https://wa.me/2347062723107";
   const field = id => byId(id).value.trim();
   const button = (label, fn) => GP.clickButton(label, fn, "quiet");
 
@@ -26,9 +25,6 @@
       actions.append(button("Use this idea", () => {
         byId("project-title").value = title;
         byId("project-title").focus();
-      }), button("Ask Dev Boyz", () => {
-        byId("quote-topic").value = title;
-        byId("quote-topic").focus();
       }));
       item.append(el("h3", title), el("p", [category, difficulty, budget, time].join(" · "), "project-meta"), el("p", description), actions);
       list.append(item);
@@ -79,19 +75,6 @@
     status("project-status", saved ? "Project plan saved on this device." : "Export a backup to keep this change.", saved ? "success" : "error");
   });
 
-  byId("project-enquiry").addEventListener("submit", event => {
-    event.preventDefault();
-    const topic = field("quote-topic");
-    const scope = field("quote-scope");
-    if (!topic || !scope) {
-      byId(topic ? "quote-scope" : "quote-topic").focus();
-      return;
-    }
-    const lines = ["Hi Dev Boyz, I'd like a quote for a final year project.", "", "Topic: " + topic, "Support needed: " + scope];
-    if (field("quote-deadline")) lines.push("Deadline: " + field("quote-deadline"));
-    if (field("quote-budget")) lines.push("Budget: ₦" + field("quote-budget"));
-    window.open(contact + "?text=" + encodeURIComponent(lines.join("\n")), "_blank", "noopener,noreferrer");
-  });
 
   function loadPlan() {
     byId("project-title").value = state.project.title;
