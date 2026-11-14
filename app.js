@@ -178,7 +178,9 @@
       else anchor.removeAttribute("aria-current");
     }
     byId("breadcrumb").textContent = pageNames[current];
-    document.title = pageNames[current] + " · GradePath";
+    document.title = state.mode === "university" && (current === "overview" || current === "grades")
+      ? "CGPA Calculator for Nigerian Universities (5.0 and 4.0) | GradePath"
+      : pageNames[current] + " | GradePath";
     pageListeners.forEach(fn => fn(current));
     if (focus && location.hash !== "#main") {
       byId(current).querySelector("h1").focus({ preventScroll: true });
@@ -210,13 +212,13 @@
     const lastQuiz = state.attempts.find(attempt => school ? Boolean(attempt.exam) : !attempt.exam);
     const priorities = C.priorityList(state, today);
     const action = byId("hero-results-link");
-    byId("overview-heading").textContent = revision ? "Time to revise" : hasResults ? "Your study overview" : "Plan your next move";
+    byId("overview-heading").textContent = revision ? "Time to revise" : hasResults ? "Your study overview" : school ? "Term results calculator" : "CGPA calculator";
     byId("overview-intro").textContent = revision
       ? exam.name + (days === 0 ? " is today. Review your priority topics." : " is in " + days + (days === 1 ? " day." : " days."))
       : hasResults ? "Check your results, upcoming assessments and study tasks." : school
         ? "Record your latest term results to see how you’re doing across subjects."
-        : "Add a semester to see your CGPA and plan what grades you need next.";
-    byId("hero-action-label").textContent = revision ? "Start revision" : !hasResults ? (school ? "Add term results" : "Add grades") : tasks.length ? "Open today’s tasks" : "Plan a study session";
+        : "Enter course grades and units on a 5.0 or 4.0 scale. See what GPA you need to reach your graduation target.";
+    byId("hero-action-label").textContent = revision ? "Start revision" : !hasResults ? (school ? "Add term results" : "Calculate CGPA") : tasks.length ? "Open today’s tasks" : "Plan a study session";
     action.href = revision ? (school ? "#exams" : "#study") : !hasResults ? (school ? "#school" : "#grades") : "#study";
     action.dataset.entry = !hasResults && !revision ? (school ? "school-form" : "grade-form") : "";
     byId("home-summary").hidden = !hasResults && !revision;
