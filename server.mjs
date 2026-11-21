@@ -10,10 +10,12 @@ import Core from "./core.js";
 import { settings } from "./server/config.mjs";
 import {
   AppError, clean, createDatabase, createUser, verifyUser, issueSession, userFromSession,
-  clearSession, saveBenchmark, getBenchmark, digest
+  clearSession, saveBenchmark, getBenchmark, digest, setPassword
 } from "./server/store.mjs";
 import { createTutor } from "./server/ai.mjs";
 import { createBilling } from "./server/billing.mjs";
+import { createMailer } from "./server/mailer.mjs";
+import { issueToken, consumeToken, markVerified, exportAccount, deleteAccount } from "./server/account.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const staticFiles = new Map([
@@ -87,6 +89,18 @@ function limiter() {
   };
 }
 
+function emailOf(input) {
+  const email = clean(input.email, 120).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new AppError(400, "Enter a valid email address.");
+  return email;
+}
+
+function passwordOf(value) {
+  const password = typeof value === "string" ? value : "";
+  if (password.length < 10 || password.length > 128) throw new AppError(400, "Use a password between 10 and 128 characters.");
+  return password;
+}
+
 function credentials(input) {
   const email = clean(input.email, 120).toLowerCase();
   const password = typeof input.password === "string" ? input.password : "";
@@ -101,14 +115,31 @@ export function createApp(config, fetcher = globalThis.fetch) {
   const billing = createBilling(db, config.payment, fetcher);
   const tutor = createTutor(db, config.ai, billing, fetcher);
   const limit = limiter();
+  const mailer = createMailer(config.mail ?? {}, fetcher);
+  const clientIp = request => (config.trustProxy && String(request.headers["x-gradepath-client-ip"] || "").slice(0, 64))
+    || request.socket.remoteAddress || "unknown";
+
+  async function sendLink(user, purpose, origin) {
+    const token = issueToken(db, user.id, purpose);
+    const base = (config.publicOrigin || origin) + "/#";
+    const verify = purpose === "verify";
+    return mailer.send({
+      to: user.email,
+      subject: verify ? "Confirm your GradePath email" : "Reset your GradePath password",
+      text: (verify ? "Confirm your email for GradePath (valid for 24 hours):\n\n" + base + "verify=" + token
+        : "Reset your GradePath password (valid for 30 minutes):\n\n" + base + "reset=" + token)
+        + "\n\nIf you did not request this, you can ignore this email."
+    });
+  }
 
   function serviceStatus(user) {
     const allowance = user ? tutor.allowance(user.id) : null;
     return {
-      online: true, workspaceBackup: true, aiConfigured: Boolean(config.ai.key), billingMode: config.payment.enabled ? config.payment.mode : "",
+      online: true, workspaceBackup: true, mailConfigured: mailer.enabled, aiConfigured: Boolean(config.ai.key), billingMode: config.payment.enabled ? config.payment.mode : "",
       inviteRequired: Boolean(config.inviteCode),
       account: user ? {
-        email: user.email, billing: billing.summary(user.id),
+        email: user.email, emailVerified: Boolean(db.prepare("SELECT email_verified AS v FROM users WHERE id=?").get(user.id)?.v),
+        billing: billing.summary(user.id),
         tutorRemaining: allowance.remaining, tutorLimit: allowance.limit
       } : null
     };
@@ -147,7 +178,7 @@ export function createApp(config, fetcher = globalThis.fetch) {
     }
     if (["/api/register", "/api/login"].includes(pathname) && method === "POST") {
       const register = pathname === "/api/register";
-      const ip = request.socket.remoteAddress || "unknown";
+      const ip = clientIp(request);
       limit((register ? "register-" : "login-") + ip, register ? 8 : 20, 600_000);
       const input = await jsonBody(request, 3000);
       const { email, password } = credentials(input);
@@ -158,12 +189,67 @@ export function createApp(config, fetcher = globalThis.fetch) {
         }
       }
       const signedIn = register ? await createUser(db, email, password) : await verifyUser(db, email, password);
+      if (register && mailer.enabled) sendLink(signedIn, "verify", origin).catch(() => {});
       if (user) clearSession(db, request, origin.startsWith("https:"));
       response.setHeader("Set-Cookie", issueSession(db, signedIn, origin.startsWith("https:")));
       json(response, register ? 201 : 200, serviceStatus(signedIn));
       return;
     }
+    if (pathname === "/api/password/forgot" && method === "POST") {
+      limit("forgot-" + clientIp(request), 10, 600_000);
+      if (!mailer.enabled) throw new AppError(503, "Password reset email is not set up yet.");
+      const email = emailOf(await jsonBody(request, 1000));
+      limit("forgot-email-" + email, 3, 3_600_000);
+      const account = db.prepare("SELECT id, email FROM users WHERE email=?").get(email);
+      if (account) await sendLink(account, "reset", origin);
+      json(response, 200, { sent: true });
+      return;
+    }
+    if (pathname === "/api/password/reset" && method === "POST") {
+      limit("reset-" + clientIp(request), 10, 600_000);
+      const input = await jsonBody(request, 1000);
+      const password = passwordOf(input.password);
+      const userId = consumeToken(db, input.token, "reset");
+      await setPassword(db, userId, password);
+      markVerified(db, userId);
+      json(response, 200, { reset: true });
+      return;
+    }
+    if (pathname === "/api/account/verify" && method === "POST") {
+      limit("verify-email-" + clientIp(request), 20, 600_000);
+      markVerified(db, consumeToken(db, (await jsonBody(request, 1000)).token, "verify"));
+      json(response, 200, { verified: true });
+      return;
+    }
     if (!user) throw new AppError(401, "Sign in to use this feature.");
+    if (pathname === "/api/account/verify/request" && method === "POST") {
+      limit("verify-request-" + user.id, 3, 3_600_000);
+      if (!mailer.enabled) throw new AppError(503, "Verification email is not set up yet.");
+      if (db.prepare("SELECT email_verified AS v FROM users WHERE id=?").get(user.id)?.v) { json(response, 200, { sent: false, verified: true }); return; }
+      await sendLink(user, "verify", origin);
+      json(response, 200, { sent: true });
+      return;
+    }
+    if (pathname === "/api/account/export" && method === "GET") {
+      limit("export-" + user.id, 5, 600_000);
+      response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store",
+        "Content-Disposition": 'attachment; filename="gradepath-account.json"' });
+      response.end(JSON.stringify(exportAccount(db, user), null, 2));
+      return;
+    }
+    if (pathname === "/api/account" && method === "DELETE") {
+      limit("delete-" + user.id, 5, 600_000);
+      const input = await jsonBody(request, 1000);
+      if (input.confirm !== true) throw new AppError(400, "Confirm that you want to permanently delete your account.");
+      await verifyUser(db, user.email, typeof input.password === "string" ? input.password : "");
+      if (billing.summary(user.id).hasSubscription) {
+        throw new AppError(409, "Cancel your GradePath Plus subscription from Manage subscription first, then delete your account.");
+      }
+      deleteAccount(db, user.id);
+      response.setHeader("Set-Cookie", clearSession(db, request, origin.startsWith("https:")));
+      json(response, 200, serviceStatus(null));
+      return;
+    }
     if (pathname === "/api/logout" && method === "POST") {
       response.setHeader("Set-Cookie", clearSession(db, request, origin.startsWith("https:")));
       json(response, 200, serviceStatus(null));

@@ -1,5 +1,6 @@
 const paths = new Set([
   "status", "register", "login", "logout", "workspace", "benchmark",
+  "password/forgot", "password/reset", "account", "account/verify", "account/verify/request", "account/export",
   "tutor", "billing/start", "billing/verify", "billing/manage", "webhooks/paystack"
 ]);
 const unavailable = { online: false, aiConfigured: false, billingMode: "", account: null };
@@ -25,12 +26,16 @@ export async function forward(request, environment = process.env, send = fetch) 
       const value = request.headers.get(name);
       if (value) headers.set(name, value);
     }
+    const client = (request.headers.get("x-vercel-forwarded-for") || request.headers.get("x-forwarded-for") || "").split(",")[0].trim();
+    if (client) headers.set("x-gradepath-client-ip", client);
     const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer();
     if (body && body.byteLength > 3_500_000) return json({ error: "This request is too large." }, 413);
     const result = await send(new URL("/api/" + path, upstream), {
       method: request.method, headers, body, redirect: "error", signal: AbortSignal.timeout(39_000)
     });
     const output = new Headers({ "Cache-Control": "no-store", "Content-Type": "application/json; charset=utf-8" });
+    const disposition = result.headers.get("content-disposition");
+    if (disposition && /^attachment; filename="[\w.-]+"$/.test(disposition)) output.set("Content-Disposition", disposition);
     for (const cookie of result.headers.getSetCookie()) output.append("Set-Cookie", cookie);
     if (!billing && ["status", "register", "login", "logout"].includes(path) && result.ok) {
       const session = await result.json();
