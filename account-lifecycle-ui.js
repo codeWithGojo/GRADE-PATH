@@ -5,7 +5,7 @@
   "use strict";
 
   const match = /^#(verify|reset)=([A-Za-z0-9_-]{43})$/.exec(location.hash);
-  const intent = match ? { purpose: match[1], token: match[2] } : null;
+  let intent = match ? { purpose: match[1], token: match[2] } : null;
   if (intent) {
     // Never let the general hash router erase an account token before processing it.
     history.replaceState(null, "", location.pathname + location.search + "#account");
@@ -140,6 +140,7 @@
       perform(button, async () => {
         await api("/password/reset", "POST", { token: intent.token, password });
         reset.reset();
+        intent = null;
         reset.hidden = true;
         tell("Password changed. Sign in using your new password.");
         await refresh();
@@ -186,6 +187,7 @@
       } catch (error) {
         tell(error.message || "That verification link is invalid or expired.", true);
       }
+      intent = null;
       await refresh();
     }
 
