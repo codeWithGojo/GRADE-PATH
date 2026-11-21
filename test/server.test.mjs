@@ -92,7 +92,7 @@ test("accounts, opt-in benchmarks, metered tutoring, and verified subscription r
     assert.equal((await request("/api/benchmark", "PUT", cohort)).code, 400);
     assert.equal((await request("/api/benchmark", "PUT", { ...cohort, consent: true })).data.result.rank, null);
     for (let i = 1; i < 25; i++) {
-      db.prepare("INSERT INTO users VALUES (?, ?, '', '', 0)").run("peer" + i, "peer" + i + "@example.test");
+      db.prepare("INSERT INTO users(id, email, salt, password_hash, created) VALUES (?, ?, '', '', 0)").run("peer" + i, "peer" + i + "@example.test");
       db.prepare("INSERT INTO benchmarks VALUES (?, 'example university', 'computing', '200', 5, ?, ?)")
         .run("peer" + i, JSON.stringify([cohort.points, false]), i === 1 ? 460 : 350);
     }

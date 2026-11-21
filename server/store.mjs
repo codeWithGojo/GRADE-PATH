@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID, scrypt as deriveKey, timingSafeEqu
 import { promisify } from "node:util";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
+import { migrate } from "./migrations.mjs";
 
 const scrypt = promisify(deriveKey);
 const sessionAge = 14 * 24 * 60 * 60;
@@ -35,52 +36,8 @@ export function transaction(db, callback) {
 export function createDatabase(path) {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const db = new DatabaseSync(path);
-  db.exec(`
-    PRAGMA foreign_keys = ON;
-    PRAGMA busy_timeout = 5000;
-    PRAGMA journal_mode = WAL;
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, salt TEXT NOT NULL, password_hash TEXT NOT NULL, created INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS sessions (
-      hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS workspace_backups (
-      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-      data TEXT NOT NULL, updated INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS benchmarks (
-      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, school TEXT NOT NULL, programme TEXT NOT NULL,
-      level TEXT NOT NULL, scale INTEGER NOT NULL, grading TEXT NOT NULL, cgpa INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS benchmark_cohort ON benchmarks(school, programme, level, scale, grading, cgpa);
-    CREATE TABLE IF NOT EXISTS ai_uses (
-      id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      bucket TEXT NOT NULL, created INTEGER NOT NULL, outcome TEXT NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS usage_user ON ai_uses(user_id, bucket);
-    CREATE INDEX IF NOT EXISTS usage_created ON ai_uses(created);
-    CREATE TABLE IF NOT EXISTS checkouts (
-      reference TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      mode TEXT NOT NULL, plan TEXT NOT NULL, url TEXT, state TEXT NOT NULL, created INTEGER NOT NULL
-    );
-    CREATE UNIQUE INDEX IF NOT EXISTS pending_checkout
-      ON checkouts(user_id, mode, plan) WHERE state IN ('opening', 'pending');
-    CREATE TABLE IF NOT EXISTS billing_customers (
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, mode TEXT NOT NULL, plan TEXT NOT NULL,
-      code TEXT NOT NULL, provider_id INTEGER, PRIMARY KEY(user_id, mode, plan), UNIQUE(mode, plan, code)
-    );
-    CREATE TABLE IF NOT EXISTS subscriptions (
-      code TEXT NOT NULL, mode TEXT NOT NULL, plan TEXT NOT NULL, customer TEXT NOT NULL,
-      status TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(code, mode)
-    );
-    CREATE TABLE IF NOT EXISTS payments (
-      reference TEXT NOT NULL, mode TEXT NOT NULL, plan TEXT NOT NULL, provider_id INTEGER,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, paid_at INTEGER NOT NULL, expires INTEGER NOT NULL,
-      revoked INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(reference, mode)
-    );
-    CREATE INDEX IF NOT EXISTS payments_owner ON payments(user_id, mode, plan, paid_at);
-  `);
+  db.exec("PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000; PRAGMA journal_mode = WAL;");
+  migrate(db);
   return db;
 }
 
@@ -89,7 +46,7 @@ export async function createUser(db, email, password) {
   const hash = (await scrypt(password, salt, 64, scryptSettings)).toString("hex");
   const user = { id: randomUUID(), email };
   const result = db.prepare(`
-    INSERT INTO users VALUES (?, ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING
+    INSERT INTO users(id, email, salt, password_hash, created) VALUES (?, ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING
   `).run(user.id, email, salt, hash, Date.now());
   if (!result.changes) throw new AppError(409, "An account already uses this email. Try signing in.");
   return user;
@@ -101,6 +58,15 @@ export async function verifyUser(db, email, password) {
   const expected = Buffer.from(user?.password_hash ?? "00".repeat(64), "hex");
   if (!timingSafeEqual(actual, expected) || !user) throw new AppError(401, "Email or password is incorrect.");
   return { id: user.id, email: user.email };
+}
+
+export async function setPassword(db, userId, password) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = (await scrypt(password, salt, 64, scryptSettings)).toString("hex");
+  transaction(db, () => {
+    db.prepare("UPDATE users SET salt=?, password_hash=? WHERE id=?").run(salt, hash, userId);
+    db.prepare("DELETE FROM sessions WHERE user_id=?").run(userId);
+  });
 }
 
 export function issueSession(db, user, secure) {

@@ -22,7 +22,11 @@ export function settings(env = process.env) {
   if (paymentMode === "live" && paymentKey && !publicOrigin.startsWith("https://")) {
     throw new Error("Set PUBLIC_URL to your public HTTPS origin before enabling live payments.");
   }
+  const mailKey = env.RESEND_API_KEY?.trim() || "";
+  const mailFrom = env.MAIL_FROM?.trim() || "";
+  if (mailKey && !/^[^<>\r\n]+@[^<>\r\n]+$|^[^<>\r\n]+<[^<>\r\n@\s]+@[^<>\r\n]+>$/.test(mailFrom)) throw new Error("Set MAIL_FROM when RESEND_API_KEY is set.");
   return {
+    trustProxy: env.TRUST_PROXY === "true", mail: { key: mailKey, from: mailFrom },
     host, port, publicOrigin, database: resolve(env.DATA_DIR || "./data", "gradepath.sqlite"),
     inviteCode: env.SIGNUP_INVITE_CODE || "",
     ai: {
