@@ -428,7 +428,7 @@
   }
 
   function openTutor(mode) {
-    byId("pal-options").open = ["code","notes","quiz","flashcards"].includes(mode);
+    byId("pal-options").open = ["code","notes","quiz","flashcards","revision","review"].includes(mode);
     tutorMode.value = mode;
     syncTutorFields();
     go("tutor");
