@@ -19,6 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
+      - run: npm ci --ignore-scripts
       - name: Run unit and integration tests
         run: npm test
       - name: Verify frontend JavaScript syntax

@@ -8,6 +8,7 @@ import { timingSafeEqual } from "node:crypto";
 import { parseArgs } from "node:util";
 import Core from "./core.js";
 import { settings } from "./server/config.mjs";
+import { postgres } from "./server/postgres.mjs";
 import {
   AppError, clean, createDatabase, createUser, verifyUser, issueSession, userFromSession,
   clearSession, saveBenchmark, getBenchmark, digest, setPassword
@@ -67,8 +68,7 @@ function sameOrigin(request, publicOrigin) {
   try {
     const origin = new URL(raw);
     if (publicOrigin ? origin.origin === publicOrigin
-      : ["http:", "https:"].includes(origin.protocol) && (origin.host === request.headers.host
-        || request.headers["sec-fetch-site"] === "same-origin")) return origin.origin;
+      : ["http:", "https:"].includes(origin.protocol) && origin.host === request.headers.host) return origin.origin;
   } catch {}
   throw new AppError(403, "Open the GradePath site before making this request.");
 }
@@ -111,16 +111,24 @@ function credentials(input) {
 }
 
 export function createApp(config, fetcher = globalThis.fetch) {
-  const db = createDatabase(config.database);
+  const db = config.databaseUrl ? postgres(config.databaseUrl) : createDatabase(config.database);
   const billing = createBilling(db, config.payment, fetcher);
   const tutor = createTutor(db, config.ai, billing, fetcher);
-  const limit = limiter();
+  const localLimit = limiter();
+  async function limit(key, maximum, span) {
+    if (!config.databaseUrl) return localLimit(key, maximum, span);
+    const now = Date.now();
+    await db.prepare("DELETE FROM rate_limits WHERE until_ms<=?").run(now);
+    const row = await db.prepare(`INSERT INTO rate_limits VALUES (?,1,?)
+      ON CONFLICT(key) DO UPDATE SET count=rate_limits.count+1 RETURNING count`).get(digest(key), now + span);
+    if (row.count > maximum) throw new AppError(429, "Too many requests. Try again later.");
+  }
   const mailer = createMailer(config.mail ?? {}, fetcher);
   const clientIp = request => (config.trustProxy && String(request.headers["x-gradepath-client-ip"] || "").slice(0, 64))
     || request.socket.remoteAddress || "unknown";
 
   async function sendLink(user, purpose, origin) {
-    const token = issueToken(db, user.id, purpose);
+    const token = await issueToken(db, user.id, purpose);
     const base = (config.publicOrigin || origin) + "/#";
     const verify = purpose === "verify";
     return mailer.send({
@@ -132,14 +140,15 @@ export function createApp(config, fetcher = globalThis.fetch) {
     });
   }
 
-  function serviceStatus(user) {
-    const allowance = user ? tutor.allowance(user.id) : null;
+  async function serviceStatus(user) {
+    const profile = user && await db.prepare("SELECT display_name,role,email_verified FROM users WHERE id=?").get(user.id);
+    const allowance = user ? await tutor.allowance(user.id) : null;
     return {
       online: true, workspaceBackup: true, mailConfigured: mailer.enabled, aiConfigured: Boolean(config.ai.key), billingMode: config.payment.enabled ? config.payment.mode : "",
       inviteRequired: Boolean(config.inviteCode),
       account: user ? {
-        email: user.email, emailVerified: Boolean(db.prepare("SELECT email_verified AS v FROM users WHERE id=?").get(user.id)?.v),
-        billing: billing.summary(user.id),
+        id: user.id, email: user.email, name: profile.display_name, role: profile.role, emailVerified: Boolean(profile.email_verified),
+        billing: await billing.summary(user.id),
         tutorRemaining: allowance.remaining, tutorLimit: allowance.limit
       } : null
     };
@@ -171,15 +180,15 @@ export function createApp(config, fetcher = globalThis.fetch) {
     }
 
     const origin = ["POST", "DELETE", "PUT"].includes(method) ? sameOrigin(request, config.publicOrigin) : "";
-    const user = userFromSession(db, request);
+    const user = await userFromSession(db, request);
     if (pathname === "/api/status" && method === "GET") {
-      json(response, 200, serviceStatus(user));
+      json(response, 200, await serviceStatus(user));
       return;
     }
     if (["/api/register", "/api/login"].includes(pathname) && method === "POST") {
       const register = pathname === "/api/register";
       const ip = clientIp(request);
-      limit((register ? "register-" : "login-") + ip, register ? 8 : 20, 600_000);
+      await limit((register ? "register-" : "login-") + ip, register ? 8 : 20, 600_000);
       const input = await jsonBody(request, 3000);
       const { email, password } = credentials(input);
       if (register && config.inviteCode) {
@@ -189,124 +198,137 @@ export function createApp(config, fetcher = globalThis.fetch) {
         }
       }
       const signedIn = register ? await createUser(db, email, password) : await verifyUser(db, email, password);
-      if (register && mailer.enabled) sendLink(signedIn, "verify", origin).catch(() => {});
-      if (user) clearSession(db, request, origin.startsWith("https:"));
-      response.setHeader("Set-Cookie", issueSession(db, signedIn, origin.startsWith("https:")));
-      json(response, register ? 201 : 200, serviceStatus(signedIn));
+      if (register && mailer.enabled) await sendLink(signedIn, "verify", origin).catch(() => {});
+      if (user) await clearSession(db, request, origin.startsWith("https:"));
+      response.setHeader("Set-Cookie", await issueSession(db, signedIn, origin.startsWith("https:")));
+      json(response, register ? 201 : 200, await serviceStatus(signedIn));
       return;
     }
     if (pathname === "/api/password/forgot" && method === "POST") {
-      limit("forgot-" + clientIp(request), 10, 600_000);
+      await limit("forgot-" + clientIp(request), 10, 600_000);
       if (!mailer.enabled) throw new AppError(503, "Password reset email is not set up yet.");
       const email = emailOf(await jsonBody(request, 1000));
-      limit("forgot-email-" + email, 3, 3_600_000);
-      const account = db.prepare("SELECT id, email FROM users WHERE email=?").get(email);
+      await limit("forgot-email-" + email, 3, 3_600_000);
+      const account = await db.prepare("SELECT id, email FROM users WHERE email=?").get(email);
       if (account) await sendLink(account, "reset", origin);
       json(response, 200, { sent: true });
       return;
     }
     if (pathname === "/api/password/reset" && method === "POST") {
-      limit("reset-" + clientIp(request), 10, 600_000);
+      await limit("reset-" + clientIp(request), 10, 600_000);
       const input = await jsonBody(request, 1000);
       const password = passwordOf(input.password);
-      const userId = consumeToken(db, input.token, "reset");
+      const userId = await consumeToken(db, input.token, "reset");
       await setPassword(db, userId, password);
-      markVerified(db, userId);
+      await markVerified(db, userId);
       json(response, 200, { reset: true });
       return;
     }
     if (pathname === "/api/account/verify" && method === "POST") {
-      limit("verify-email-" + clientIp(request), 20, 600_000);
-      markVerified(db, consumeToken(db, (await jsonBody(request, 1000)).token, "verify"));
+      await limit("verify-email-" + clientIp(request), 20, 600_000);
+      await markVerified(db, await consumeToken(db, (await jsonBody(request, 1000)).token, "verify"));
       json(response, 200, { verified: true });
       return;
     }
     if (!user) throw new AppError(401, "Sign in to use this feature.");
     if (pathname === "/api/account/verify/request" && method === "POST") {
-      limit("verify-request-" + user.id, 3, 3_600_000);
+      await limit("verify-request-" + user.id, 3, 3_600_000);
       if (!mailer.enabled) throw new AppError(503, "Verification email is not set up yet.");
-      if (db.prepare("SELECT email_verified AS v FROM users WHERE id=?").get(user.id)?.v) { json(response, 200, { sent: false, verified: true }); return; }
+      if ((await db.prepare("SELECT email_verified AS v FROM users WHERE id=?").get(user.id))?.v) { json(response, 200, { sent: false, verified: true }); return; }
       await sendLink(user, "verify", origin);
       json(response, 200, { sent: true });
       return;
     }
+    if (pathname === "/api/account/profile" && method === "PUT") {
+      const input = await jsonBody(request, 500);
+      if (typeof input.name !== "string" || input.name.length > 60) throw new AppError(400, "Use a name of up to 60 characters.");
+      await db.prepare("UPDATE users SET display_name=? WHERE id=?").run(clean(input.name, 60), user.id);
+      json(response, 200, await serviceStatus(user));
+      return;
+    }
     if (pathname === "/api/account/export" && method === "GET") {
-      limit("export-" + user.id, 5, 600_000);
+      await limit("export-" + user.id, 5, 600_000);
       response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store",
         "Content-Disposition": 'attachment; filename="gradepath-account.json"' });
-      response.end(JSON.stringify(exportAccount(db, user), null, 2));
+      response.end(JSON.stringify(await exportAccount(db, user), null, 2));
       return;
     }
     if (pathname === "/api/account" && method === "DELETE") {
-      limit("delete-" + user.id, 5, 600_000);
+      await limit("delete-" + user.id, 5, 600_000);
       const input = await jsonBody(request, 1000);
       if (input.confirm !== true) throw new AppError(400, "Confirm that you want to permanently delete your account.");
       await verifyUser(db, user.email, typeof input.password === "string" ? input.password : "");
-      if (billing.summary(user.id).hasSubscription) {
+      if ((await billing.summary(user.id)).hasSubscription) {
         throw new AppError(409, "Cancel your GradePath Plus subscription from Manage subscription first, then delete your account.");
       }
-      deleteAccount(db, user.id);
-      response.setHeader("Set-Cookie", clearSession(db, request, origin.startsWith("https:")));
-      json(response, 200, serviceStatus(null));
+      await deleteAccount(db, user.id);
+      response.setHeader("Set-Cookie", await clearSession(db, request, origin.startsWith("https:")));
+      json(response, 200, await serviceStatus(null));
       return;
     }
     if (pathname === "/api/logout" && method === "POST") {
-      response.setHeader("Set-Cookie", clearSession(db, request, origin.startsWith("https:")));
-      json(response, 200, serviceStatus(null));
+      response.setHeader("Set-Cookie", await clearSession(db, request, origin.startsWith("https:")));
+      json(response, 200, await serviceStatus(null));
       return;
     }
     if (pathname === "/api/workspace") {
       if (method === "GET") {
-        const saved = db.prepare("SELECT data, updated FROM workspace_backups WHERE user_id=?").get(user.id);
-        json(response, 200, { backup: saved ? JSON.parse(saved.data) : null, updated: saved?.updated ?? null });
+        const saved = await db.prepare("SELECT data, updated FROM workspace_backups WHERE user_id=?").get(user.id);
+        json(response, 200, { owner: user.id, backup: saved ? JSON.parse(saved.data) : null, updated: saved?.updated ?? null });
         return;
       }
       if (method === "PUT") {
-        limit("workspace-" + user.id, 20, 60_000);
+        await limit("workspace-" + user.id, 20, 60_000);
         const input = await jsonBody(request, 3_500_000);
         let data;
         try { data = Core.normalizeState(input.backup); }
         catch { throw new AppError(400, "Choose a valid GradePath backup."); }
-        const updated = Date.now();
-        db.prepare("INSERT INTO workspace_backups VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET data=excluded.data, updated=excluded.updated")
-          .run(user.id, JSON.stringify(data), updated);
+        if (input.owner !== undefined && input.owner !== user.id) throw new AppError(409, "The signed-in account changed. Reload before syncing.");
+        const base = input.base ?? null;
+        if (base !== null && (!Number.isSafeInteger(base) || base < 1)) throw new AppError(400, "Invalid workspace revision.");
+        const updated = Math.max(Date.now(), (base || 0) + 1);
+        const snapshot = JSON.stringify(data);
+        const result = base === null
+          ? await db.prepare("INSERT INTO workspace_backups VALUES (?, ?, ?) ON CONFLICT(user_id) DO NOTHING").run(user.id, snapshot, updated)
+          : await db.prepare("UPDATE workspace_backups SET data=?,updated=? WHERE user_id=? AND updated=?").run(snapshot, updated, user.id, base);
+        if (!result.changes) throw new AppError(409, "Another device saved newer work. Export your local copy, then choose which workspace to keep.");
         json(response, 200, { updated });
         return;
       }
     }
     if (pathname === "/api/benchmark") {
-      if (method === "GET") { json(response, 200, { result: getBenchmark(db, user.id) }); return; }
+      if (method === "GET") { json(response, 200, { result: await getBenchmark(db, user.id) }); return; }
       if (method === "PUT") {
-        limit("benchmark-" + user.id, 12, 60_000);
-        const result = saveBenchmark(db, user.id, await jsonBody(request, 3500));
+        await limit("benchmark-" + user.id, 12, 60_000);
+        const result = await saveBenchmark(db, user.id, await jsonBody(request, 3500));
         json(response, 200, { result });
         return;
       }
       if (method === "DELETE") {
-        db.prepare("DELETE FROM benchmarks WHERE user_id=?").run(user.id);
+        await db.prepare("DELETE FROM benchmarks WHERE user_id=?").run(user.id);
         json(response, 200, { result: null });
         return;
       }
     }
     if (pathname === "/api/tutor" && method === "POST") {
-      limit("tutor-" + user.id, 8, 60_000);
+      await limit("tutor-" + user.id, 8, 60_000);
       const result = await tutor.ask(user, await jsonBody(request));
-      json(response, 200, { ...result, remaining: tutor.allowance(user.id).remaining });
+      json(response, 200, { ...result, remaining: (await tutor.allowance(user.id)).remaining });
       return;
     }
     if (pathname === "/api/billing/start" && method === "POST") {
-      limit("checkout-" + user.id, 8, 60_000);
+      await limit("checkout-" + user.id, 8, 60_000);
       json(response, 200, await billing.start(user, config.publicOrigin || origin));
       return;
     }
     if (pathname === "/api/billing/verify" && method === "POST") {
-      limit("verify-" + user.id, 15, 60_000);
+      await limit("verify-" + user.id, 15, 60_000);
       const { reference } = await jsonBody(request, 2500);
       json(response, 200, await billing.verify(user, reference));
       return;
     }
     if (pathname === "/api/billing/manage" && method === "POST") {
-      limit("manage-" + user.id, 8, 60_000);
+      await limit("manage-" + user.id, 8, 60_000);
       json(response, 200, await billing.manage(user));
       return;
     }

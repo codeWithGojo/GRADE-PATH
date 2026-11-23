@@ -2,6 +2,9 @@ import { randomUUID } from "node:crypto";
 import { AppError, clean, transaction } from "./store.mjs";
 
 const modes = {
+  revision: "Build a revision plan with dates, short sessions and retrieval checks. Use the supplied confidence ratings.",
+  flashcards: "Write short question-and-answer flashcards based on supplied extracts and cite supporting pages.",
+  review: "Review the learner's mistake, explain the correct reasoning, and give a transfer question.",
   explain: "Explain the topic in plain language, include one worked example, and end with a brief check for understanding.",
   notes: "Use the supplied note extracts as your primary sources. Cite only extract IDs that support the explanation. Say when a detail is absent.",
   quiz: "Create three or four distinct multiple-choice questions. Use the supplied notes when available. Each question has four choices, a zero-based answer index, and a concise explanation.",
@@ -25,28 +28,29 @@ const schema = {
 };
 
 export function createTutor(db, config, billing, fetcher) {
-  function allowance(userId) {
-    const access = billing.summary(userId);
+  async function allowance(userId) {
+    const access = await billing.summary(userId);
     const day = new Date(Date.now() + 3_600_000).toISOString().slice(0, 10);
     const bucket = access.active ? "plus-" + access.paidAt : "free-" + day;
-    const limit = access.active ? config.plusLimit : 3;
-    const used = db.prepare("SELECT count(*) AS total FROM ai_uses WHERE user_id=? AND bucket=? AND outcome!='failed'")
-      .get(userId, bucket).total;
+    const profile = await db.prepare("SELECT role FROM users WHERE id=?").get(userId);
+    const limit = profile?.role === "admin" ? config.adminLimit : access.active ? config.plusLimit : config.freeLimit;
+    const used = (await db.prepare("SELECT count(*) AS total FROM ai_uses WHERE user_id=? AND bucket=? AND outcome!='failed'")
+      .get(userId, bucket)).total;
     return { bucket, limit, remaining: Math.max(0, limit - used), access };
   }
 
-  function reserve(userId) {
-    return transaction(db, () => {
-      const current = allowance(userId);
+  async function reserve(userId) {
+    return await transaction(db, async () => {
+      const current = await allowance(userId);
       if (!current.remaining) throw new AppError(402, current.access.active
         ? "You’ve used the tutoring allowance for this paid period." : "You’ve used today’s three free questions. Come back tomorrow.");
       const now = Date.now();
       const day = new Date(now);
       day.setUTCHours(0, 0, 0, 0);
-      const count = db.prepare("SELECT count(*) AS total FROM ai_uses WHERE created>=?").get(day.getTime()).total;
+      const count = (await db.prepare("SELECT count(*) AS total FROM ai_uses WHERE created>=?").get(day.getTime())).total;
       if (count >= config.dailyLimit) throw new AppError(429, "The workspace reached its tutor limit for today. Try again tomorrow.");
       const id = randomUUID();
-      db.prepare("INSERT INTO ai_uses VALUES (?, ?, ?, ?, 'pending')").run(id, userId, current.bucket, now);
+      await db.prepare("INSERT INTO ai_uses VALUES (?, ?, ?, ?, 'pending')").run(id, userId, current.bucket, now);
       return id;
     });
   }
@@ -62,7 +66,7 @@ export function createTutor(db, config, billing, fetcher) {
     const previous = Array.isArray(input.previous) ? input.previous.slice(-2).map(turn => ({
       question: clean(turn?.question, 1500), answer: clean(turn?.answer, 1800)
     })) : [];
-    const extracts = Array.isArray(input.extracts) && ["notes", "quiz"].includes(mode)
+    const extracts = Array.isArray(input.extracts) && ["notes", "quiz", "flashcards"].includes(mode)
       ? input.extracts.slice(0, 5).flatMap((extract, index) => {
         const text = clean(extract?.text, 1800);
         if (!text) return [];
@@ -72,7 +76,8 @@ export function createTutor(db, config, billing, fetcher) {
     if (!Object.hasOwn(modes, mode) || !question || (mode === "notes" && !extracts.length)) {
       throw new AppError(400, "Enter a question and choose a note for Ask my notes.");
     }
-    const requestId = reserve(user.id);
+    const started = Date.now();
+    const requestId = await reserve(user.id);
     let outcome = "failed";
     try {
       const response = await fetcher("https://api.openai.com/v1/responses", {
@@ -85,7 +90,7 @@ export function createTutor(db, config, billing, fetcher) {
             + "Help students learn methods. Use plain text in answer. Return an empty questions array unless generating a quiz. "
             + (exam ? "Keep examples suitable for secondary-school exam preparation. Use original practice questions. " : "")
             + modes[mode],
-          input: JSON.stringify({ question, course, exam, subject, code, extracts, previous }),
+          input: JSON.stringify({ level: clean(input.level, 32), confidence: clean(input.confidence, 300), question, course, exam, subject, code, extracts, previous }),
           text: { format: { type: "json_schema", name: "gradepath_tutoring", strict: true, schema } }
         })
       });
@@ -106,12 +111,18 @@ export function createTutor(db, config, billing, fetcher) {
       const citations = Array.isArray(parsed.citations) ? new Set(parsed.citations) : new Set();
       const sources = extracts.filter(extract => citations.has(extract.id)).map(({ id, title, location, text }) =>
         ({ id, title, location, excerpt: text.slice(0, 260) }));
+      const usage = data.usage;
+      if (Number.isSafeInteger(usage?.input_tokens) && Number.isSafeInteger(usage?.output_tokens)) {
+        const cost = Number.isFinite(config.inputPrice) && Number.isFinite(config.outputPrice)
+          ? (config.inputPrice * usage.input_tokens + config.outputPrice * usage.output_tokens) / 1e6 : null;
+        await db.prepare("INSERT INTO tutor_metrics VALUES (?, ?, ?, ?, ?)").run(requestId, usage.input_tokens, usage.output_tokens, Date.now() - started, cost);
+      }
       outcome = "completed";
       return { answer, sources, questions };
     } catch {
       throw new AppError(502, "The tutor could not finish this request. Try again in a moment.");
     } finally {
-      db.prepare("UPDATE ai_uses SET outcome=? WHERE id=?").run(outcome, requestId);
+      await db.prepare("UPDATE ai_uses SET outcome=? WHERE id=?").run(outcome, requestId);
     }
   }
 

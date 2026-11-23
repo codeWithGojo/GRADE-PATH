@@ -29,7 +29,7 @@
     });
     let result;
     try { result = await response.json(); } catch { throw new Error("The GradePath server could not be reached."); }
-    if (!response.ok) throw new Error(result.error || "The request could not be completed.");
+    if (!response.ok) throw Object.assign(new Error(result.error || "The request could not be completed."), { status: response.status });
     return result;
   }
 
@@ -59,6 +59,8 @@
     signIn.hidden = !session.online || Boolean(account);
     byId("sign-out").hidden = !account;
     byId("cloud-backup").hidden = !account || !session.workspaceBackup;
+    byId("profile-name").value = account?.name || "";
+    if (binding && binding.owner !== account?.id && session.online) detachSync();
     byId("invite-label").hidden = !session.inviteRequired;
     byId("cohort-join").disabled = !account;
     if (!account) {
@@ -138,6 +140,57 @@
     }
   });
 
+  let binding = null;
+  try { binding = JSON.parse(sessionStorage.getItem("gradepath-sync") || "null"); } catch {}
+  let timer, writing = false, dirty = false;
+  function remember(owner, base) {
+    binding = { owner, base };
+    try { sessionStorage.setItem("gradepath-sync", JSON.stringify(binding)); } catch {}
+  }
+  function detachSync() {
+    clearTimeout(timer);
+    binding = null;
+    dirty = false;
+    try { sessionStorage.removeItem("gradepath-sync"); } catch {}
+    status("sync-status", "Saved on this device.");
+  }
+  function scheduleSync() {
+    if (!binding || binding.owner !== session.account?.id) return;
+    dirty = true;
+    clearTimeout(timer);
+    status("sync-status", navigator.onLine ? "Changes waiting to sync…" : "Offline · changes saved on this device.");
+    timer = setTimeout(upload, 1400);
+  }
+  async function upload() {
+    if (writing || !dirty || !binding || binding.owner !== session.account?.id || !navigator.onLine) return;
+    const current = binding;
+    writing = true;
+    dirty = false;
+    try {
+      const result = await api("/workspace", "PUT", { ...current, backup: state });
+      if (binding !== current) return;
+      remember(current.owner, result.updated);
+      status("sync-status", "Synced to your account.");
+    } catch (error) {
+      if (binding !== current) return;
+      if (error.status === 409) detachSync();
+      dirty = false;
+      status("sync-status", error.message + " Your local copy is available. Use Save to account to retry.", "error");
+    } finally {
+      writing = false;
+      if (dirty) scheduleSync();
+    }
+  }
+  window.addEventListener("gradepath-saved", scheduleSync);
+  window.addEventListener("online", async () => { await refresh(); scheduleSync(); });
+  byId("profile-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    try {
+      session = await api("/account/profile", "PUT", { name: value("profile-name") });
+      renderSession();
+      status("account-status", "Profile updated.", "success");
+    } catch (error) { status("account-status", error.message, "error"); }
+  });
   for (const id of ["cloud-save", "cloud-restore"]) {
     byId(id).addEventListener("click", async () => {
       const buttons = ["cloud-save", "cloud-restore", "sign-out"].map(byId);
@@ -146,7 +199,10 @@
         if (id === "cloud-save") {
           const existing = await api("/workspace");
           if (existing.backup && !window.confirm("Replace the backup saved to your account with this device’s data?")) return;
-          await api("/workspace", "PUT", { backup: state });
+          if (existing.owner !== session.account.id) throw new Error("Account changed. Reload this page.");
+          const result = await api("/workspace", "PUT", { backup: state, base: existing.updated, owner: existing.owner });
+          remember(existing.owner, result.updated);
+          status("sync-status", "Sync enabled for this tab.");
           status("account-status", "Backup saved to your account.", "success");
         } else {
           const result = await api("/workspace");
@@ -154,11 +210,14 @@
             status("account-status", "No backup saved to this account yet.");
             return;
           }
+          if (result.owner !== session.account.id) throw new Error("Account changed. Reload this page.");
           const restored = C.normalizeState(result.backup);
           if (!window.confirm("Replace this device’s study data with your account backup?")) return;
           Object.assign(state, restored);
           window.dispatchEvent(new Event("gradepath-import"));
           commit();
+          remember(result.owner, result.updated);
+          status("sync-status", "Sync enabled for this tab.");
           go("account");
           window.dispatchEvent(new Event("gradepath-mode"));
           status("account-status", "Account backup restored.", "success");
@@ -176,6 +235,7 @@
     button.disabled = true;
     try {
       session = await api("/logout", "POST", {});
+      detachSync();
       quizDraft = null;
       tutorMemory = null;
       byId("tutor-answer").hidden = true;
@@ -227,7 +287,7 @@
 
   function syncTutorFields() {
     byId("tutor-code-label").hidden = tutorMode.value !== "code";
-    byId("tutor-note-label").hidden = !["notes", "quiz"].includes(tutorMode.value);
+    byId("tutor-note-label").hidden = !["notes", "quiz", "flashcards"].includes(tutorMode.value);
     byId("tutor-note").required = tutorMode.value === "notes";
     const line = "Sending shares your question and any selected notes or code with the AI provider.";
     byId("tutor-context").textContent = examContext ? "Focus: " + examContext.exam + " · " + examContext.subject + ". " + line : line;
@@ -297,7 +357,7 @@
       const result = await api("/tutor", "POST", {
         mode, question, course, code, previous,
         exam: examContext?.exam || "", subject: examContext?.subject || "",
-        extracts: ["notes", "quiz"].includes(mode) ? noteExtracts(note, question) : []
+        extracts: ["notes", "quiz", "flashcards"].includes(mode) ? noteExtracts(note, question) : []
       });
       session.account.tutorRemaining = result.remaining;
       tutorMemory = { key: contextKey, previous: [...previous, { question, answer: result.answer.slice(0, 1800) }].slice(-2) };
@@ -403,6 +463,7 @@
   });
   syncTutorFields();
   refresh().then(async () => {
+    if (binding && binding.owner === session.account?.id) scheduleSync();
     if (callbackReference) {
       go("account");
       if (session.account) await verifyPayment(callbackReference);

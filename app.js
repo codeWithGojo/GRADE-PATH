@@ -43,6 +43,7 @@
       localStorage.setItem(C.storageKey, JSON.stringify(state));
       if (storageError) notify("");
       storageError = false;
+      window.dispatchEvent(new Event("gradepath-saved"));
     } catch {
       storageError = true;
       notify("Browser storage could not save this change. Export study data before you refresh.");

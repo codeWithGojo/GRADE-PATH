@@ -567,6 +567,9 @@
                       <option value="notes">Ask my notes</option>
                       <option value="quiz">Generate a practice quiz</option>
                       <option value="code">Get a coding hint</option>
+                      <option value="revision">Plan my revision</option>
+                      <option value="flashcards">Make flashcards from notes</option>
+                      <option value="review">Review a mistake</option>
                     </select>
                   </label>
                   <label class="field">Course (optional) <input id="tutor-course" list="known-courses" maxlength="24"></label>
@@ -610,7 +613,9 @@
                   <div class="actions"><button class="primary" type="submit" value="login">Sign in</button><button type="submit" value="register">Create account</button></div>
                 </form>
                 <div id="cloud-backup" hidden>
-                  <p class="help">Save a copy to your account or restore it on another device.</p>
+                  <form id="profile-form"><label class="field">Display name (optional)<input maxlength="60" id="profile-name" autocomplete="nickname"></label><button type="submit">Save name</button></form>
+                  <p id="sync-status" role="status">Saved on this device.</p>
+                  <p class="help">Choose which workspace to start with. Edits then sync while this tab is connected. Export a backup before switching accounts on a shared device.</p>
                   <div class="actions"><button id="cloud-save" type="button">Save to account</button><button id="cloud-restore" type="button">Restore from account</button></div>
                 </div>
                 <button id="sign-out" type="button" hidden>Sign out</button>

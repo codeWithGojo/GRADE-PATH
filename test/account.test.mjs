@@ -11,12 +11,12 @@ test("migrations apply once and upgrade a pre-runner database without losing use
   db.prepare("INSERT INTO users VALUES ('u1', 'old@example.test', 's', 'h', 1)").run();
   migrate(db);
   migrate(db);
-  assert.deepEqual(db.prepare("SELECT id FROM schema_migrations ORDER BY id").all().map(row => row.id), [1, 2]);
+  assert.deepEqual(db.prepare("SELECT id FROM schema_migrations ORDER BY id").all().map(row => row.id), [1, 2, 3]);
   const user = db.prepare("SELECT email, email_verified FROM users").get();
   assert.equal(user.email, "old@example.test");
   assert.equal(user.email_verified, 0);
-  assert.throws(() => migrate(db, [{ id: 3, name: "broken", sql: "CREATE TABLE x (" }]), /Migration 3/);
-  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM schema_migrations").get().n, 2);
+  assert.throws(() => migrate(db, [{ id: 4, name: "broken", sql: "CREATE TABLE x (" }]), /Migration 4/);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM schema_migrations").get().n, 3);
 });
 
 async function harness(overrides = {}) {

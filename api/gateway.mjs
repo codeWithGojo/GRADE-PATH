@@ -1,6 +1,6 @@
 const paths = new Set([
   "status", "register", "login", "logout", "workspace", "benchmark",
-  "password/forgot", "password/reset", "account", "account/verify", "account/verify/request", "account/export",
+  "account/profile", "password/forgot", "password/reset", "account", "account/verify", "account/verify/request", "account/export",
   "tutor", "billing/start", "billing/verify", "billing/manage", "webhooks/paystack"
 ]);
 const unavailable = { online: false, aiConfigured: false, billingMode: "", account: null };
@@ -48,8 +48,30 @@ export async function forward(request, environment = process.env, send = fetch) 
   }
 }
 
-export default { fetch: forwardRequest };
-
-function forwardRequest(request) {
-  return forward(request);
+let application;
+export default async function gateway(req, res) {
+  const origin = "https://" + req.headers.host;
+  const url = new URL(req.url, origin);
+  const path = url.searchParams.get("service") || url.pathname.replace(/^\/api\//, "");
+  if (process.env.DATABASE_URL && paths.has(path)) {
+    const [{ createApp }, { settings }] = await Promise.all([import("../server.mjs"), import("../server/config.mjs")]);
+    if (!application) {
+      const config = settings(process.env);
+      config.trustProxy = true;
+      config.payment.enabled &&= config.payment.mode === "test" && process.env.GRADEPATH_ENABLE_HOSTED_CHECKOUT === "true";
+      application = createApp(config);
+    }
+    req.url = "/api/" + path;
+    req.headers["x-gradepath-client-ip"] = String(req.headers["x-vercel-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim();
+    application.server.emit("request", req, res);
+    return;
+  }
+  url.searchParams.set("service", path);
+  const request = new Request(url, { method: req.method, headers: req.headers,
+    ...(["GET","HEAD"].includes(req.method) ? {} : { body: req, duplex: "half" }) });
+  const result = await forward(request);
+  res.statusCode = result.status;
+  for (const [key, value] of result.headers) if (key !== "set-cookie") res.setHeader(key, value);
+  if (result.headers.getSetCookie().length) res.setHeader("Set-Cookie", result.headers.getSetCookie());
+  res.end(Buffer.from(await result.arrayBuffer()));
 }

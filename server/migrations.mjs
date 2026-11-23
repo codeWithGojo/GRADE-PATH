@@ -59,7 +59,13 @@ const migrations = [
     );
     CREATE INDEX auth_tokens_user ON auth_tokens(user_id, purpose);
   `
-  }
+  },
+  { id: 3, name: "profile_and_metering", sql: `
+    ALTER TABLE users ADD COLUMN display_name TEXT NOT NULL DEFAULT '';
+    ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student' CHECK(role IN ('student','admin','educator'));
+    CREATE TABLE tutor_metrics (request_id TEXT PRIMARY KEY REFERENCES ai_uses(id) ON DELETE CASCADE,
+      input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL, latency_ms INTEGER NOT NULL, cost_usd REAL);
+  ` }
 ];
 
 export function migrate(db, list = migrations) {
