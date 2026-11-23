@@ -66,13 +66,18 @@ const migrations = [
     CREATE TABLE tutor_metrics (request_id TEXT PRIMARY KEY REFERENCES ai_uses(id) ON DELETE CASCADE,
       input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL, latency_ms INTEGER NOT NULL, cost_usd REAL);
   ` },
+  { id: 5, name: "account_preferences", sql: `
+    ALTER TABLE users ADD COLUMN study_profile TEXT NOT NULL DEFAULT '{}';
+    CREATE TABLE email_changes (user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      email TEXT NOT NULL, hash TEXT NOT NULL UNIQUE, expires INTEGER NOT NULL);
+  ` },
   { id: 4, name: "ai_limits", sql: "CREATE TABLE ai_limits (tier TEXT PRIMARY KEY CHECK(tier IN ('free','plus','admin')), allowance INTEGER NOT NULL CHECK(allowance BETWEEN 0 AND 10000));" }
 ];
 
 export function migrate(db, list = migrations) {
   db.exec("CREATE TABLE IF NOT EXISTS schema_migrations (id INTEGER PRIMARY KEY, name TEXT NOT NULL, applied INTEGER NOT NULL)");
   const done = new Set(db.prepare("SELECT id FROM schema_migrations").all().map(row => row.id));
-  for (const step of list) {
+  for (const step of [...list].sort((a, b) => a.id - b.id)) {
     if (done.has(step.id)) continue;
     db.exec("BEGIN IMMEDIATE");
     try {

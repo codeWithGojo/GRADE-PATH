@@ -2,7 +2,7 @@
 const cacheName = "gradepath-shell-__BUILD__";
 const assets = ["/","/index.html","/styles.css","/core.js","/catalog.js","/app.js","/grades.js",
   "/school.js","/study.js","/exams.js","/online.js","/lab.js","/projects.js","/experience.js",
-  "/appearance.js","/account-lifecycle-ui.js","/runner.html","/favicon.svg",
+  "/surfaces.css","/surfaces.js","/appearance.js","/account-lifecycle-ui.js","/runner.html","/favicon.svg",
   "/vendor/fonts/sora.woff","/vendor/fonts/inter.woff","/vendor/pdf.min.mjs","/vendor/pdf.worker.min.mjs"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(assets)));

@@ -22,7 +22,7 @@ export const clean = (value, max = 120) => typeof value === "string" ? value.tri
 export const digest = value => createHash("sha256").update(value).digest("hex");
 
 export async function transaction(db, callback) {
-  if (db.transaction) return db.transaction(callback);
+  if (typeof db.transaction === "function") return db.transaction(callback);
   db.exec("BEGIN IMMEDIATE");
   try {
     const result = await callback();

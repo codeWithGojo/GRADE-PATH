@@ -1,8 +1,9 @@
-import pg from "pg";
+import { createRequire } from "node:module";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 // Only application-owned SQL passes through this adapter. Values are always bound.
 export function postgres(connectionString) {
+  const pg = createRequire(import.meta.url)("pg");
   const pool = new pg.Pool({ connectionString, max: 4, connectionTimeoutMillis: 8000 });
   const context = new AsyncLocalStorage();
   function prepare(sql) {

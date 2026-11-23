@@ -174,6 +174,11 @@
 
   function route(focus = false) {
     applyMode();
+    const landing = !location.hash && !new URLSearchParams(location.search).has("reference") && !new URLSearchParams(location.search).has("trxref");
+    byId("landing").hidden = !landing;
+    document.querySelector(".shell").hidden = landing;
+    document.body.classList.toggle("on-landing", landing);
+    if (landing) { window.scrollTo(0, 0); if (focus) byId("landing-heading").focus(); }
     const current = page();
     if (location.hash && location.hash !== "#main" && location.hash !== "#" + current) history.replaceState(null, "", "#" + current);
     for (const section of document.querySelectorAll(".page")) section.hidden = section.id !== current;
@@ -187,7 +192,7 @@
       ? "CGPA Calculator for Nigerian Universities (5.0 and 4.0) | GradePath"
       : pageNames[current] + " | GradePath";
     pageListeners.forEach(fn => fn(current));
-    if (focus && location.hash !== "#main") {
+    if (!landing && focus && location.hash !== "#main") {
       byId(current).querySelector("h1").focus({ preventScroll: true });
       window.scrollTo({ top: 0, behavior: "instant" });
     }

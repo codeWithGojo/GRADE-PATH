@@ -4,14 +4,14 @@ import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { parseArgs } from "node:util";
 import Core from "./core.js";
 import { settings } from "./server/config.mjs";
 import { postgres } from "./server/postgres.mjs";
 import {
   AppError, clean, createDatabase, createUser, verifyUser, issueSession, userFromSession,
-  clearSession, saveBenchmark, getBenchmark, digest, setPassword
+  clearSession, saveBenchmark, getBenchmark, digest, setPassword, transaction
 } from "./server/store.mjs";
 import { createTutor } from "./server/ai.mjs";
 import { createBilling } from "./server/billing.mjs";
@@ -20,7 +20,7 @@ import { issueToken, consumeToken, markVerified, exportAccount, deleteAccount } 
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const staticFiles = new Map([
-  ["/", "index.html"], ["/index.html", "index.html"], ["/styles.css", "styles.css"], ["/sw.js","sw.js"],
+  ["/", "index.html"], ["/index.html", "index.html"], ["/styles.css", "styles.css"], ["/sw.js","sw.js"], ["/surfaces.css","surfaces.css"], ["/surfaces.js","surfaces.js"],
   ...["core", "catalog", "account-lifecycle-ui", "app", "grades", "study", "exams", "lab", "online", "school", "projects", "experience", "appearance"].map(name => ["/" + name + ".js", name + ".js"]),
   ["/runner.html", "runner.html"], ...["sora.woff", "inter.woff"].map(name => ["/vendor/fonts/" + name, "vendor/fonts/" + name]), ["/favicon.svg", "favicon.svg"], ["/vendor/pdf.min.mjs", "vendor/pdf.min.mjs"],
   ["/vendor/pdf.worker.min.mjs", "vendor/pdf.worker.min.mjs"]
@@ -142,14 +142,14 @@ export function createApp(config, fetcher = globalThis.fetch) {
   }
 
   async function serviceStatus(user) {
-    const profile = user && await db.prepare("SELECT display_name,role,email_verified FROM users WHERE id=?").get(user.id);
+    const profile = user && await db.prepare("SELECT display_name,role,email_verified,study_profile FROM users WHERE id=?").get(user.id);
     const allowance = user ? await tutor.allowance(user.id) : null;
     return {
       online: true, workspaceBackup: true, mailConfigured: mailer.enabled, aiConfigured: Boolean(config.ai.key), billingMode: config.payment.enabled ? config.payment.mode : "",
       inviteRequired: Boolean(config.inviteCode),
       account: user ? {
-        id: user.id, email: user.email, name: profile.display_name, role: profile.role, emailVerified: Boolean(profile.email_verified),
-        billing: await billing.summary(user.id),
+        id: user.id, email: user.email, name: profile.display_name, role: profile.role, studyProfile: JSON.parse(profile.study_profile), emailVerified: Boolean(profile.email_verified),
+        billing: allowance.access,
         tutorRemaining: allowance.remaining, tutorLimit: allowance.limit
       } : null
     };
@@ -232,13 +232,50 @@ export function createApp(config, fetcher = globalThis.fetch) {
       json(response, 200, { verified: true });
       return;
     }
+    if (pathname === "/api/account/email/confirm" && method === "POST") {
+      await limit("email-confirm-" + clientIp(request), 12, 600000);
+      const { token } = await jsonBody(request, 500);
+      if (typeof token !== "string" || !/^[\w-]{43}$/.test(token)) throw new AppError(400, "Request a fresh email-change link.");
+      await transaction(db, async () => {
+        const pending = await db.prepare("SELECT user_id,email FROM email_changes WHERE hash=? AND expires>?").get(digest(token),Date.now());
+        if (!pending) throw new AppError(400, "This link expired or was already used. Request a fresh link in Settings.");
+        const updated = await db.prepare("UPDATE users SET email=?, email_verified=1 WHERE id=? AND NOT EXISTS (SELECT 1 FROM users other WHERE other.email=? AND other.id<>?)").run(pending.email,pending.user_id,pending.email,pending.user_id);
+        if (!updated.changes) throw new AppError(409, "Choose another email address.");
+        for (const table of ["sessions","auth_tokens","email_changes"]) await db.prepare("DELETE FROM " + table + " WHERE user_id=?").run(pending.user_id);
+      });
+      json(response, 200, { changed: true });
+      return;
+    }
     if (!user) throw new AppError(401, "Sign in to use this feature.");
     if (pathname === "/api/account/verify/request" && method === "POST") {
       await limit("verify-request-" + user.id, 3, 3_600_000);
       if (!mailer.enabled) throw new AppError(503, "Verification email is not set up yet.");
       if ((await db.prepare("SELECT email_verified AS v FROM users WHERE id=?").get(user.id))?.v) { json(response, 200, { sent: false, verified: true }); return; }
-      await sendLink(user, "verify", origin);
+      if (!await sendLink(user, "verify", origin)) throw new AppError(503, "Verification email could not be sent. Please retry.");
       json(response, 200, { sent: true });
+      return;
+    }
+    if (pathname === "/api/account/email" && method === "POST") {
+      await limit("change-email-" + user.id, 3, 3600000);
+      if (!mailer.enabled) throw new AppError(503, "Email delivery is unavailable. Your current address still works.");
+      const input = await jsonBody(request, 1000);
+      await verifyUser(db,user.email,passwordOf(input.password));
+      const email = emailOf(input);
+      if (email === user.email) throw new AppError(400, "Enter a different email address.");
+      if ((await billing.summary(user.id)).hasSubscription) throw new AppError(409, "Manage your active subscription before changing your billing email.");
+      const token = randomBytes(32).toString("base64url");
+      await db.prepare("INSERT INTO email_changes VALUES (?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET email=excluded.email,hash=excluded.hash,expires=excluded.expires").run(user.id,email,digest(token),Date.now()+1800000);
+      const sent = await mailer.send({ to: email, subject: "Confirm your new GradePath email", text: "Confirm this change within 30 minutes: " + (config.publicOrigin || origin) + "/#email=" + token });
+      if (!sent) throw new AppError(503, "Email delivery failed. Try again.");
+      json(response, 200, { sent: true });
+      return;
+    }
+    if (pathname === "/api/account/study-profile" && method === "PUT") {
+      const input = await jsonBody(request, 1000);
+      if (!["secondary","university"].includes(input.mode)) throw new AppError(400, "Choose your study path.");
+      const profile = { mode: input.mode, school: clean(input.school, 90), course: clean(input.course, 80) };
+      await db.prepare("UPDATE users SET study_profile=? WHERE id=?").run(JSON.stringify(profile), user.id);
+      json(response, 200, await serviceStatus(user));
       return;
     }
     if (pathname === "/api/admin/allowance" && method === "PUT") {

@@ -11,12 +11,12 @@ test("migrations apply once and upgrade a pre-runner database without losing use
   db.prepare("INSERT INTO users VALUES ('u1', 'old@example.test', 's', 'h', 1)").run();
   migrate(db);
   migrate(db);
-  assert.deepEqual(db.prepare("SELECT id FROM schema_migrations ORDER BY id").all().map(row => row.id), [1, 2, 3, 4]);
+  assert.deepEqual(db.prepare("SELECT id FROM schema_migrations ORDER BY id").all().map(row => row.id), [1, 2, 3, 4, 5]);
   const user = db.prepare("SELECT email, email_verified FROM users").get();
   assert.equal(user.email, "old@example.test");
   assert.equal(user.email_verified, 0);
-  assert.throws(() => migrate(db, [{ id: 5, name: "broken", sql: "CREATE TABLE x (" }]), /Migration 5/);
-  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM schema_migrations").get().n, 4);
+  assert.throws(() => migrate(db, [{ id: 6, name: "broken", sql: "CREATE TABLE x (" }]), /Migration 6/);
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM schema_migrations").get().n, 5);
 });
 
 async function harness(overrides = {}) {
@@ -150,6 +150,26 @@ test("login rate limit ignores a spoofed client-IP header unless TRUST_PROXY is 
     }
     assert.equal(last.code, 401, "each real client IP is limited separately behind a trusted gateway");
   } finally { await trusted.close(); }
+});
+
+test("changing email needs the current password and a single-use link to the new address", async () => {
+  const app = await harness();
+  try {
+    const registered = await app.call("/api/register","POST",{email:"first@example.test",password});
+    const cookie = registered.cookie.split(";")[0];
+    const change = {email:"second@example.test",password};
+    assert.equal((await app.call("/api/account/email","POST",{...change,password:"invalid-password"},cookie)).code,401);
+    assert.equal((await app.call("/api/account/email","POST",change,cookie)).code,200);
+    const mail = app.emails.at(-1);
+    assert.deepEqual(mail.to,["second@example.test"]);
+    const token = mail.text.match(/#email=([\w-]{43})/)[1];
+    assert.equal((await app.call("/api/status","GET",undefined,cookie)).data.account.email,"first@example.test");
+    assert.equal((await app.call("/api/account/email/confirm","POST",{token})).code,200);
+    assert.equal((await app.call("/api/account/email/confirm","POST",{token})).code,400);
+    assert.equal((await app.call("/api/status","GET",undefined,cookie)).data.account,null);
+    const updated = await app.call("/api/login","POST",change);
+    assert.equal(updated.data.account.emailVerified,true);
+  } finally { await app.close(); }
 });
 
 test("without mail configuration, reset reports unavailable instead of pretending to send", async () => {

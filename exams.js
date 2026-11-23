@@ -55,6 +55,7 @@
 
   function renderExam() {
     const current = state.exams[active];
+    byId("jamb-mock").hidden = active !== "JAMB";
     const info = C.examInsights(current || { subjects: [] }, active);
     const mark = active === "JAMB" ? (info.fullMock ? info.total + " / 400" : "Enter four mock scores")
       : info.mean === null ? "No mock scores yet" : info.mean.toFixed(1) + " / 100";
@@ -148,6 +149,10 @@
     });
   });
 
+  byId("jamb-mock").addEventListener("click", () => {
+    const message = GP.startJambMock(state.exams.JAMB?.subjects || [], Number(value("exam-practice-time")));
+    status("exam-practice-status", message, message ? "error" : "");
+  });
   byId("exam-form").addEventListener("input", () => { dirty = true; status("exam-status", ""); });
   byId("add-exam-subject").addEventListener("click", () => { dirty = true; addSubject({}, true); });
   byId("exam-form").addEventListener("submit", event => {

@@ -71,6 +71,13 @@
   function renderBenchmark() {
     const output = byId("cohort-result");
     output.replaceChildren();
+    const milestones = [];
+    if (state.semesters.length) milestones.push(state.semesters.length + " saved semester(s)");
+    if (state.labPassed.length) milestones.push(state.labPassed.length + " coding lesson(s) completed");
+    const goal = state.graduationGoal;
+    const current = C.overall(state);
+    if (goal && current.units) milestones.push(current.gpa >= goal.target ? "CGPA target reached" : (goal.target - current.gpa).toFixed(2) + " below your target CGPA");
+    byId("personal-milestones").textContent = milestones.join(" · ");
     byId("cohort-leave").hidden = !benchmark;
     if (!benchmark) return;
     const caption = benchmark.school + " · " + benchmark.programme + " · Level " + benchmark.level;
@@ -112,9 +119,11 @@
   }
   byId("remember-chat").addEventListener("change", () => { if (!byId("remember-chat").checked) chat = []; saveChat(); });
   byId("clear-chat").addEventListener("click", () => { chat = []; tutorMemory = null; saveChat(); });
+  GP.online = { api, refresh, session: () => session };
   function renderSession() {
     const { account } = session;
     openChat(account?.id || null);
+    window.dispatchEvent(new CustomEvent("gradepath-session", { detail: session }));
     const bill = account?.billing;
     byId("sidebar-mode").textContent = session.online ? "Grades saved on this device" : "On this device";
     byId("top-account").textContent = bill?.active ? "GradePath Plus" : account ? "Free account" : "Free workspace";
@@ -127,7 +136,8 @@
     byId("sign-out").hidden = !account;
     byId("cloud-backup").hidden = !account || !session.workspaceBackup;
     byId("allowance-form").hidden = account?.role !== "admin";
-    byId("account-display-name").value = account?.name || "";
+    if (document.activeElement !== byId("account-display-name")) byId("account-display-name").value = account?.name || "";
+    byId("profile-path-detail").textContent = [account?.studyProfile?.school, account?.studyProfile?.course].filter(Boolean).join(" · ") || "Choose your school and course to personalise your workspace.";
     if (binding && binding.owner !== account?.id && session.online) detachSync();
     byId("invite-label").hidden = !session.inviteRequired;
     byId("cohort-join").disabled = !account;
@@ -141,7 +151,7 @@
       ? "Unavailable" : !account ? "Sign in to continue" : bill?.active ? "Plus" : "Free";
     byId("tutor-access").textContent = !session.online ? "The AI tutor is unavailable here. You can still use practice questions and Coding Lab hints."
       : !session.aiConfigured ? "The AI tutor is not connected yet. You can keep using the study tools."
-        : !account ? "Sign in for three free AI questions each day."
+        : !account ? "Sign in to use your daily tutoring allowance."
           : account.tutorRemaining ? account.tutorRemaining + " of " + account.tutorLimit + " requests left "
             + (bill?.active ? "this paid period." : "today.")
             : bill?.active ? "You’ve used your allowance for this paid period." : "You’ve used today’s tutoring allowance. Come back tomorrow.";
@@ -156,7 +166,7 @@
     if (bill?.status === "attention") byId("plus-status").textContent += " Renewal payment needs attention.";
     byId("billing-history").replaceChildren(...(bill?.history || []).map(p => el("p",
       new Date(p.paid_at).toLocaleDateString() + " · ₦1,000 · " + (p.revoked ? "Refunded" : "Verified") + " · " + p.reference, "help")));
-    byId("plus-plan").hidden = !session.billingMode;
+    byId("plus-plan").hidden = false;
     const checkout = byId("checkout");
     checkout.hidden = !session.billingMode;
     checkout.disabled = !session.billingMode || !account || Boolean(bill?.active || bill?.hasSubscription || (bill?.pending && !bill?.canContinue));
@@ -190,7 +200,7 @@
 
   signIn.addEventListener("submit", async event => {
     event.preventDefault();
-    const intent = event.submitter?.value === "register" ? "register" : "login";
+    const intent = (event.submitter || signIn.querySelector("button[type=submit]"))?.value === "register" ? "register" : "login";
     const controls = [...signIn.querySelectorAll("button")];
     controls.forEach(button => { button.disabled = true; });
     status("account-status", intent === "register" ? "Creating account…" : "Signing in…");
@@ -202,6 +212,7 @@
       status("account-status", "Signed in.", "success");
       status("cohort-status", "");
       renderSession();
+      window.dispatchEvent(new CustomEvent("gradepath-login", { detail: intent }));
       await loadBenchmark();
       if (callbackReference) await verifyPayment(callbackReference);
     } catch (error) {
@@ -417,6 +428,7 @@
   }
 
   function openTutor(mode) {
+    byId("pal-options").open = ["code","notes","quiz","flashcards"].includes(mode);
     tutorMode.value = mode;
     syncTutorFields();
     go("tutor");
@@ -435,6 +447,12 @@
     byId("tutor-code").value = code.slice(0, 10_000);
     byId("tutor-question").value = "Help me with this lesson: " + lesson + ". Give me a hint and a small test to try.";
     openTutor("code");
+  };
+  GP.reviewMistake = (q, selection) => {
+    examContext = null;
+    byId("tutor-question").value = (q.prompt + "\nMy answer: " + (selection === null ? "Skipped" : q.options[Number(selection)]) + "\nCorrect answer: " + q.options[q.answer] + "\nExplain how to solve it.").slice(0, 1500);
+    byId("tutor-course").value = q.course || "";
+    openTutor("review");
   };
   GP.askAboutExam = (exam, subject, topic) => {
     examContext = { exam, subject };
@@ -592,6 +610,7 @@
   });
 
   onChange(() => {
+    renderBenchmark();
     replaceOptions(byId("tutor-note"), state.notes.map(note => [note.id, note.title + (note.course ? " · " + note.course : "")]), "Choose your notes");
   });
   syncTutorFields();

@@ -66,7 +66,7 @@
     return {
       version: 3, mode: "university", schoolClass: "SS 3", schoolTarget: 75, schoolTerms: [],
       scale: 5, points: { ...gradeDefaults[5] }, replace: false, semesters: [],
-      weeklyGoal: 120, profiles: [], materials: [], notes: [], tasks: [], questions: [], attempts: [], mistakes: [],
+      weeklyGoal: 120, graduationGoal: null, profiles: [], materials: [], notes: [], tasks: [], questions: [], attempts: [], mistakes: [],
       project: { title: "", milestones: [] }, labDrafts: {}, labPassed: [], assessment: null, exams: {}, selectedExam: "WAEC"
     };
   }
@@ -101,6 +101,11 @@
     }
     const state = blankState();
     if (Number.isInteger(source.weeklyGoal) && source.weeklyGoal >= 5 && source.weeklyGoal <= 10080) state.weeklyGoal = source.weeklyGoal;
+    const goal = source.graduationGoal;
+    if (goal && Number.isInteger(goal.units) && goal.units >= 1 && goal.units <= 400 &&
+        [goal.target, goal.future].every(n => Number.isFinite(n) && n >= 0 && n <= source.scale)) {
+      state.graduationGoal = { units: goal.units, target: goal.target, future: goal.future };
+    }
     state.mode = source.mode === "secondary" ? "secondary" : "university";
     state.schoolClass = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"].includes(source.schoolClass) ? source.schoolClass : "SS 3";
     state.schoolTarget = Number.isFinite(source.schoolTarget) && source.schoolTarget >= 0 && source.schoolTarget <= 100 ? source.schoolTarget : 75;
@@ -149,6 +154,7 @@
     state.questions = shortList(source.questions, 180).map(questionRecord).filter(Boolean);
     state.attempts = shortList(source.attempts, 150).map(attempt => ({
       date: validDate(attempt?.date) ? attempt.date : localDay(),
+      mock: attempt?.exam === "JAMB" && Number.isInteger(attempt.mock) && attempt.mock >= 0 && attempt.mock <= 400 ? attempt.mock : null,
       correct: Math.max(0, Math.min(180, Number(attempt?.correct) || 0)),
       total: Math.max(1, Math.min(180, Number(attempt?.total) || 1)),
       topic: clean(attempt?.topic, 60), course: courseCode(attempt?.course),
@@ -223,7 +229,8 @@
     const marks = plan.subjects.filter(subject => subject.score !== null);
     const total = marks.reduce((sum, subject) => sum + subject.score, 0);
     const mean = marks.length ? total / marks.length : null;
-    const fullMock = exam === "JAMB" && plan.subjects.length === 4 && marks.length === 4;
+    const subjects = new Set(plan.subjects.map(s => s.name.trim().toLowerCase().replace(/^(use of english|english language)$/, "english")));
+    const fullMock = exam === "JAMB" && subjects.has("english") && subjects.size === 4 && marks.length === 4;
     const order = [...plan.subjects].sort((a, b) => (a.score ?? a.confidence * 20) - (b.score ?? b.confidence * 20));
     return { total, mean, fullMock, marks, order };
   }

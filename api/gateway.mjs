@@ -1,6 +1,6 @@
 const paths = new Set([
   "status", "register", "login", "logout", "workspace", "benchmark",
-  "admin/allowance", "account/profile", "password/forgot", "password/reset", "account", "account/verify", "account/verify/request", "account/export",
+  "account/email", "account/email/confirm", "account/study-profile", "admin/allowance", "account/profile", "password/forgot", "password/reset", "account", "account/verify", "account/verify/request", "account/export",
   "tutor", "billing/start", "billing/verify", "billing/manage", "webhooks/paystack"
 ]);
 const unavailable = { online: false, aiConfigured: false, billingMode: "", account: null };

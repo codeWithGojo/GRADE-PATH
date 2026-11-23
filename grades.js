@@ -197,6 +197,15 @@
     gradeStatus("");
   });
 
+  function loadGoal() {
+    const goal = state.graduationGoal;
+    byId("target-cgpa").value = goal?.target ?? "";
+    byId("target-units").value = goal?.units ?? "";
+    byId("future-gpa").value = goal?.future ?? "";
+    if (goal) byId("future-slider").value = goal.future;
+  }
+  loadGoal();
+  window.addEventListener("gradepath-import", loadGoal);
   let projection = null;
   function drawGraph(data) {
     if (graph.hidden || !graph.clientWidth) return;
@@ -325,6 +334,8 @@
       status("target-result", "Save a semester first.", "error");
       return;
     }
+    state.graduationGoal = { units: number("target-units"), target: number("target-cgpa"), future };
+    commit(false);
     const projected = "Projected finish " + plan.projected.toFixed(2) + ". ";
     const requirement = Math.ceil((plan.required - 1e-9) * 100) / 100;
     if (plan.required > maximum + 1e-9) {
