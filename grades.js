@@ -176,6 +176,14 @@
     settingsInputs(state.scale, state.points);
   }
 
+  byId("university-preset").addEventListener("change", () => {
+    if (value("university-preset") !== "unilag") return;
+    byId("grade-scale").value = 5;
+    settingsInputs(5, C.gradeDefaults[5]);
+  });
+  byId("grading-settings").addEventListener("input", event => {
+    if (event.target.id === "grade-scale" || event.target.id.startsWith("points-")) byId("university-preset").value = "";
+  });
   byId("grade-scale").addEventListener("change", () => {
     const scale = Number(value("grade-scale"));
     settingsInputs(scale, scale === state.scale ? state.points : C.gradeDefaults[scale]);
@@ -189,6 +197,16 @@
     gradeStatus("");
   });
 
+  function loadGoal() {
+    const goal = state.graduationGoal;
+    byId("target-cgpa").value = goal?.target ?? "";
+    byId("target-units").value = goal?.units ?? "";
+    byId("future-gpa").value = goal?.future ?? "";
+    if (goal) byId("future-slider").value = goal.future;
+  }
+  loadGoal();
+  window.addEventListener("gradepath-import", loadGoal);
+  let projection = null;
   function drawGraph(data) {
     if (graph.hidden || !graph.clientWidth) return;
     const width = graph.clientWidth;
@@ -202,7 +220,8 @@
     const inset = { x: 28, y: 12 };
     const bottom = height - 25;
     const span = bottom - inset.y;
-    const x = i => data.length === 1 ? (width + inset.x) / 2 : inset.x + i * (width - inset.x - 13) / (data.length - 1);
+    const count = data.length + (projection === null ? 0 : 1);
+    const x = i => count === 1 ? (width + inset.x) / 2 : inset.x + i * (width - inset.x - 13) / (count - 1);
     const y = grade => bottom - grade / state.scale * span;
     const colors = getComputedStyle(document.documentElement);
     ctx.font = "12px system-ui";
@@ -231,9 +250,17 @@
       ctx.fill();
     });
     ctx.fillStyle = colors.getPropertyValue("--muted").trim();
+    if (projection !== null && data.length) {
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x(data.length - 1), y(data.at(-1).cumulative.gpa));
+      ctx.lineTo(x(data.length), y(projection));
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     ctx.fillText(data.length === 1 ? "1 semester" : "First semester", inset.x, height - 5);
-    if (data.length > 1 && width > 230) {
-      const label = "Latest semester";
+    if (count > 1 && width > 230) {
+      const label = projection === null ? "Latest semester" : "Hypothetical finish";
       ctx.fillText(label, width - ctx.measureText(label).width - 9, height - 5);
     }
   }
@@ -247,6 +274,7 @@
     byId("share-panel").hidden = !last;
     if (last && Number(value("grade-scale")) !== state.scale) fillSettings();
     byId("grade-scale").disabled = Boolean(last);
+    byId("university-preset").disabled = Boolean(last && state.scale !== 5);
     byId("scale-hint").textContent = last
       ? "Grade-point and retake changes recalculate saved results. The scale is fixed while semesters are saved."
       : "Set grade points to match your school.";
@@ -272,10 +300,14 @@
     const units = byId("target-units").valueAsNumber;
     const output = byId("future-live");
     if (!current.units || !Number.isInteger(units) || units < 1 || units > 400) {
+      projection = null;
+      drawGraph(C.timeline(state));
       output.textContent = current.units ? "Enter remaining units to see your projected CGPA." : "Save a semester to start a projection.";
       return;
     }
-    const predicted = (current.gpa * current.units + Number(slider.value) * units) / (current.units + units);
+    const predicted = C.forecast(current, units, 0, Number(slider.value), state.scale).projected;
+    projection = predicted;
+    drawGraph(C.timeline(state));
     const bands = state.scale === 5 ? [[4.5, "First Class"], [3.5, "Second Class Upper"], [2.4, "Second Class Lower"], [1.5, "Third Class"], [1, "Pass"]] : [];
     const band = bands.find(([cutoff]) => predicted + 1e-9 >= cutoff);
     const classification = state.scale !== 5 ? "" : band ? " · " + band[1] : " · Below Pass";
@@ -302,6 +334,8 @@
       status("target-result", "Save a semester first.", "error");
       return;
     }
+    state.graduationGoal = { units: number("target-units"), target: number("target-cgpa"), future };
+    commit(false);
     const projected = "Projected finish " + plan.projected.toFixed(2) + ". ";
     const requirement = Math.ceil((plan.required - 1e-9) * 100) / 100;
     if (plan.required > maximum + 1e-9) {
@@ -356,6 +390,14 @@
     ctx.font = "700 108px system-ui";
     const first = data[0].cumulative.gpa.toFixed(2);
     const last = data.at(-1).cumulative.gpa.toFixed(2);
+    if (projection !== null && data.length) {
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x(data.length - 1), y(data.at(-1).cumulative.gpa));
+      ctx.lineTo(x(data.length), y(projection));
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     ctx.fillText(data.length === 1 ? last : first + " → " + last, 70, 365, 960);
     ctx.fillStyle = "#d4e2ff";
     ctx.font = "36px system-ui";

@@ -87,12 +87,20 @@ test("accounts, opt-in benchmarks, metered tutoring, and verified subscription r
     assert.equal((await request("/api/workspace")).data.backup.scale, 5);
     assert.equal((await request("/api/workspace", "GET", undefined, { authorization: "" })).code, 401);
 
+    const snapshot = (await request("/api/workspace")).data;
+    const commits = await Promise.all([200, 300].map(weeklyGoal => request("/api/workspace", "PUT",
+      { owner: snapshot.owner, base: snapshot.updated, backup: { ...snapshot.backup, weeklyGoal } })));
+    assert.deepEqual(commits.map(r => r.code).sort(), [200, 409]);
+    assert.equal((await request("/api/workspace", "PUT", { owner: "wrong", base: null, backup: snapshot.backup })).code, 409);
+    assert.equal((await request("/api/workspace", "PUT", { backup: snapshot.backup })).code, 409);
+    assert.equal((await request("/api/account/profile", "PUT", { name: "Learner", role: "admin" })).data.account.role, "student");
+    assert.equal((await request("/api/admin/allowance", "PUT", { tier: "free", allowance: 9 })).code, 403);
     const cohort = { school: "Example University", programme: "Computing", level: "200", scale: 5, cgpa: 4.6,
       points: [5, 4, 3, 2, 1, 0], replace: false };
     assert.equal((await request("/api/benchmark", "PUT", cohort)).code, 400);
     assert.equal((await request("/api/benchmark", "PUT", { ...cohort, consent: true })).data.result.rank, null);
     for (let i = 1; i < 25; i++) {
-      db.prepare("INSERT INTO users VALUES (?, ?, '', '', 0)").run("peer" + i, "peer" + i + "@example.test");
+      db.prepare("INSERT INTO users(id, email, salt, password_hash, created) VALUES (?, ?, '', '', 0)").run("peer" + i, "peer" + i + "@example.test");
       db.prepare("INSERT INTO benchmarks VALUES (?, 'example university', 'computing', '200', 5, ?, ?)")
         .run("peer" + i, JSON.stringify([cohort.points, false]), i === 1 ? 460 : 350);
     }
@@ -118,8 +126,11 @@ test("accounts, opt-in benchmarks, metered tutoring, and verified subscription r
     assert.equal(checkoutCalls, 1);
     assert.equal((await webhook("subscription.create", subscription, false)).status, 401);
     assert.equal((await webhook("subscription.create", subscription)).status, 200);
+    assert.equal((await webhook("invoice.payment_failed", { subscription, customer })).status, 200);
     const verified = await request("/api/billing/verify", "POST", { reference: checkout.reference });
     assert.equal(verified.data.active, true);
+    assert.equal(verified.data.status, "attention");
+    assert.equal(verified.data.history.length, 1);
     assert.equal((await request("/api/billing/verify", "POST", { reference: checkout.reference })).data.paidUntil, verified.data.paidUntil);
     assert.equal((await request("/api/billing/start", "POST", {})).code, 409);
     assert.equal((await request("/api/billing/manage", "POST", {})).data.url, "https://paystack.com/manage/fixture");
@@ -134,12 +145,17 @@ test("accounts, opt-in benchmarks, metered tutoring, and verified subscription r
     assert.equal((await webhook("invoice.update", invoice)).status, 200);
     const renewed = (await request("/api/status")).data.account.billing.paidUntil;
     assert(renewed > verified.data.paidUntil);
+    assert.equal((await request("/api/status")).data.account.billing.status, "active");
     await webhook("invoice.update", invoice);
     assert.equal((await request("/api/status")).data.account.billing.paidUntil, renewed);
     assert.equal(db.prepare("SELECT COUNT(*) AS count FROM payments").get().count, 2);
     assert.equal((await webhook("refund.processed", { amount: 100000, transaction_reference: reference })).status, 200);
     assert.equal((await request("/api/status")).data.account.billing.paidUntil, verified.data.paidUntil);
 
+    await webhook("subscription.not_renew", subscription);
+    assert.equal((await request("/api/status")).data.account.billing.status, "non-renewing");
+    await webhook("subscription.disable", subscription);
+    assert.equal((await request("/api/status")).data.account.billing.hasSubscription, false);
     assert.equal((await request("/api/logout", "POST", {})).data.account, null);
     assert.equal((await request("/api/status")).data.account, null);
     const signedIn = await request("/api/login", "POST", { email: customer.email, password: "a-long-test-password" });

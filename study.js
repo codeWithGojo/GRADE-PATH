@@ -59,6 +59,9 @@
     const start = C.weekStart(selectedWeek.value || C.localDay());
     const tasks = weekTasks(start);
     const done = tasks.filter(task => task.completed);
+    byId("weekly-goal").value = state.weeklyGoal;
+    byId("weekly-progress").max = state.weeklyGoal;
+    byId("weekly-progress").value = done.reduce((sum, task) => sum + task.minutes, 0);
     byId("week-summary").textContent = C.dateText(start) + " to " + C.dateText(C.shiftDay(6, start))
       + " · " + done.length + " of " + tasks.length + " done · " + done.reduce((sum, task) => sum + task.minutes, 0) + " min completed";
     renderList("tasks", tasks.map(task => {
@@ -81,6 +84,26 @@
     }), "No study tasks scheduled for this week.");
   }
 
+  byId("weekly-goal").addEventListener("change", event => {
+    if (!event.target.reportValidity() || !event.target.value) return;
+    state.weeklyGoal = event.target.valueAsNumber;
+    commit();
+  });
+  byId("revision-reminder").addEventListener("click", () => {
+    const tasks = weekTasks(C.weekStart(selectedWeek.value || C.localDay())).filter(task => !task.completed);
+    if (!tasks.length) { status("task-status", "Schedule a study task for this week first."); return; }
+    const escape = s => s.replace(/\\/g, "\\\\").replace(/[\r\n]+/g, " ").replace(/([,;])/g, "\\$1");
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const lines = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//GradePath//Study planner//EN"];
+    for (const task of tasks) {
+      lines.push("BEGIN:VEVENT", "UID:" + encodeURIComponent(task.id) + "@gradepath", "DTSTAMP:" + stamp,
+        "DTSTART;VALUE=DATE:" + task.date.replaceAll("-", ""), "SUMMARY:" + escape(task.title),
+        "DESCRIPTION:" + task.minutes + " minutes", "BEGIN:VALARM", "TRIGGER:-PT12H", "ACTION:DISPLAY",
+        "DESCRIPTION:Revision reminder","END:VALARM","END:VEVENT");
+    }
+    lines.push("END:VCALENDAR");
+    GP.download("gradepath-revision.ics", new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar" }));
+  });
   selectedWeek.addEventListener("change", renderTasks);
   byId("task-form").addEventListener("submit", event => {
     event.preventDefault();
@@ -236,7 +259,9 @@
   });
 
   function renderNotes() {
-    renderList("notes", state.notes.map(note => {
+    const query = value("notes-search").trim().toLowerCase();
+    const notes = state.notes.filter(note => !query || [note.title, note.course, ...note.pages.map(p => p.text)].some(text => text.toLowerCase().includes(query)));
+    renderList("notes", notes.map(note => {
       const item = row(note.title,
         [note.course, note.pages.length + (note.kind === "pdf" ? " page(s)" : " section(s)")].filter(Boolean).join(" · "),
         clickButton("Ask tutor", () => GP.askAboutNote(note), "quiet"),
@@ -252,9 +277,10 @@
       }
       item.firstElementChild.append(details);
       return item;
-    }), "Upload or paste notes to keep them here.");
+    }), query ? "No matching notes." : "Upload or paste notes to keep them here.");
   }
 
+  byId("notes-search").addEventListener("input", renderNotes);
   let activeQuiz = null;
   let quizTimer = null;
   const quizPlayer = byId("quiz-player");
@@ -281,7 +307,7 @@
         commit();
       }, "quiet"))), "Your added questions appear here.");
     renderList("recent-scores", state.attempts.slice(0, 8).map(attempt =>
-      row(attempt.topic + " · " + attempt.correct + "/" + attempt.total, C.dateText(attempt.date))
+      row(attempt.topic + " · " + attempt.correct + "/" + attempt.total + (Number.isInteger(attempt.mock) ? " · Practice " + attempt.mock + "/400" : ""), C.dateText(attempt.date))
     ), "Finish a practice set to see your scores.");
   }
 
@@ -296,16 +322,25 @@
   function finishQuiz(expired = false) {
     if (!activeQuiz) return;
     const answers = new FormData(quizAnswerForm);
-    const { questions, label, exam } = activeQuiz;
+    const { questions, label, exam, fourSubjects } = activeQuiz;
+    const scores = new Map();
     let correct = 0;
     const review = questions.map((question, index) => {
       const answer = answers.get("answer-" + index);
       const pass = answer !== null && Number(answer) === question.answer;
       if (pass) correct += 1;
+      if (fourSubjects) {
+        const subject = subjectKey(question.subject);
+        const tally = scores.get(subject) || { name: subject, correct: 0, total: 0 };
+        tally.correct += Number(pass);
+        tally.total++;
+        scores.set(subject, tally);
+      }
       C.recordReview(state, question.id, pass);
       const result = row((pass ? "Correct · " : answer === null ? "Unanswered · " : "Missed · ") + question.prompt,
         "Answer: " + question.options[question.answer] + ". " + question.explanation);
       if (!pass) {
+        result.append(clickButton("Review with Study Pal", () => GP.reviewMistake(question, answer), "quiet"));
         const similar = questionsFor(exam).find(item => item.id !== question.id && item.topic === question.topic);
         if (similar) {
           const button = clickButton("Try a related question", () => beginQuiz([similar], 0, question.topic, exam), "quiet");
@@ -316,12 +351,14 @@
     });
     const course = questions.every(question => question.course === questions[0].course) ? questions[0].course : "";
     const subject = questions.every(question => question.subject === questions[0].subject) ? questions[0].subject || "" : "";
-    state.attempts.unshift({ date: C.localDay(), correct, total: questions.length, topic: label, course, exam, subject });
+    const parts = [...scores.values()].map(s => ({ name: s.name, score: Math.round(100 * s.correct / s.total) }));
+    const mock = fourSubjects ? C.examInsights({ subjects: parts }, "JAMB").total : null;
+    state.attempts.unshift({ date: C.localDay(), correct, total: questions.length, topic: label, course, exam, subject, mock });
     state.attempts = state.attempts.slice(0, 150);
     state.mistakes = state.mistakes.slice(-220);
     clearQuiz();
     commit();
-    status("quiz-status", (expired ? "Time’s up. " : "") + "Score " + correct + " / " + questions.length + ".", "success");
+    status("quiz-status", (expired ? "Time’s up. " : "") + "Score " + correct + " / " + questions.length + (mock === null ? "." : " · Mini mock " + mock + "/400. Each subject contributes up to 100 practice points."), "success");
     renderList("quiz-review", review, "");
     byId("quiz-status").tabIndex = -1;
     byId("quiz-status").focus();
@@ -375,6 +412,22 @@
     return [...questions.slice(start), ...questions.slice(0, start)].slice(0, length);
   }
 
+  GP.startJambMock = (subjects, seconds) => {
+    if (activeQuiz) { go("practice"); return "Finish the current practice set first."; }
+    const names = new Set(subjects.map(s => subjectKey(s.name)));
+    if (names.size !== 4 || !names.has("english")) return "Save Use of English and three distinct subjects first.";
+    const label = "Four-subject mini mock";
+    const questions = [];
+    for (const subject of subjects) {
+      const pool = questionsFor("JAMB").filter(q => subjectKey(q.subject) === subjectKey(subject.name));
+      if (!pool.length) return "Add original practice questions for " + subject.name + " before starting this combination.";
+      questions.push(...pickQuestions(pool, "JAMB", label, 3));
+    }
+    go("practice");
+    beginQuiz(questions, seconds, label, "JAMB");
+    activeQuiz.fourSubjects = true;
+    return "";
+  };
   GP.startExamPractice = (exam, subject, seconds) => {
     if (activeQuiz) { go("practice"); return "Finish or end your current practice set."; }
     const questions = questionsFor(exam).filter(question => !subject || subjectKey(question.subject || question.topic) === subjectKey(subject));

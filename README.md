@@ -4,7 +4,7 @@ GradePath is a study workspace for university and secondary-school students. The
 
 **Live site:** https://gradepath-theta.vercel.app/
 
-Version 3 adds separate **University** and **Secondary** modes. Switch modes in the sidebar; your choice is remembered, and neither mode overwrites the other's results. University mode uses weighted GPA/CGPA. Secondary mode uses subject marks and term averages for JSS 1–SS 3, with a separate WAEC, NECO and JAMB preparation page. Study Room, Practice and Coding Lab are shared.
+GradePath supports separate **University** and **Secondary** modes. Switch modes in the sidebar; your choice is remembered, and neither mode overwrites the other's results. University mode uses weighted GPA/CGPA. Secondary mode uses subject marks and term averages for JSS 1–SS 3, with a separate WAEC, NECO and JAMB preparation page. Study Room, Practice and Coding Lab are shared.
 
 The interface includes blue/navy university styling, burgundy/pink secondary styling, light and dark themes, animated controls, section reveals, a scroll indicator and a mobile menu. Motion is reduced when the device requests it. Sora and Inter fonts are bundled locally under their SIL Open Font Licenses in `vendor/fonts/`.
 
@@ -12,7 +12,7 @@ The interface includes blue/navy university styling, burgundy/pink secondary sty
 
 The public Vercel site is a static study workspace. Its calculators, school results, study planning, practice, Coding Lab and backups work in the browser. **Accounts, cloud sync, AI tutoring, paid checkout and peer benchmarks are not enabled on this deployment.** The account page clearly shows these limits, and no payment is taken. The optional Node backend below is included in the source for further development.
 
-Read `CLAUDE_HANDOFF.md` for the current capabilities, deployment details, verification results and remaining work.
+The V4 preview runs the account service on the existing Vercel project with dedicated Neon PostgreSQL storage. See [V4 implementation status](docs/GRADEPATH_IMPLEMENTATION_STATUS.md) for verification, migration instructions and launch gates. `CLAUDE_HANDOFF.md` records the earlier V3 deployment.
 
 ## Start on Windows
 
@@ -34,11 +34,11 @@ Grades, subject insights, exam mock plans, study materials, pasted/TXT/Markdown 
 
 ## Start the local server
 
-The optional server contains accounts, opt-in peer benchmarks, AI tutoring, and subscription checkout. AI and payments require your own provider configuration. Core study data is still stored in your browser, even after signing in; this version does not sync notes or grades between devices. Your account and any benchmark you choose to share are stored in the server's SQLite database. PDF text import works on localhost and the hosted HTTPS site.
+The local server uses SQLite by default. Hosted deployments use PostgreSQL when `DATABASE_URL` is configured. Sign in and choose **Save to account** or **Restore from account** to enable revision-checked sync for that tab. Export a JSON backup before switching accounts or resolving conflicting edits. Once the public assets have been cached, the study workspace can reopen offline.
 
 1. Install [Node.js 24 LTS or later](https://nodejs.org/en/download) using the Windows installer.
 2. Double-click **START-WINDOWS.cmd** and leave its window open.
-3. Visit [http://localhost:3000](http://localhost:3000). To start it from VS Code instead, open a terminal in the project folder and run `node server.mjs`. There are no npm packages to install.
+3. Visit [http://localhost:3000](http://localhost:3000). To start it from VS Code instead, open a terminal in the project folder and run `node server.mjs`. SQLite mode uses Node’s built-in modules. Use `npm ci` before running PostgreSQL mode or the complete build and test suite.
 4. If you used the file directly, export your data there and import it on localhost. The browser treats the two addresses as different workspaces.
 
 If port 3000 is already in use, run `node server.mjs --port 3001` and open `http://localhost:3001`. Keep using the same address when you return. To stop the server, press **Ctrl+C** in its terminal.
@@ -64,7 +64,7 @@ Keep provider keys in `.env`. Never place them in an HTML or JavaScript file ser
 
 The app verifies the plan amount, payment currency and ownership, and webhook signature. Subscription access follows verified payments. **Manage subscription** opens Paystack's hosted management page. Paystack test access and live access are kept apart. No provider account, keys, or live checkout are included in this download. [Paystack subscription documentation](https://paystack.com/docs/payments/subscriptions/)
 
-For a hosted pilot, run one Node instance with a persistent `DATA_DIR` behind your HTTPS reverse proxy. Back up the SQLite data directory. The included account flow uses email and password. Email verification and password recovery would need to be added before a broad public launch. The optional `SIGNUP_INVITE_CODE` lets you restrict new accounts during a pilot.
+For a hosted pilot, run one Node instance with a persistent `DATA_DIR` behind your HTTPS reverse proxy. Back up the SQLite data directory. The included account flow uses email and password. Set RESEND_API_KEY and MAIL_FROM to enable verification and recovery email. The optional `SIGNUP_INVITE_CODE` lets you restrict new accounts during a pilot.
 
 ### Peer benchmarks
 
@@ -96,6 +96,6 @@ Run `npm test` with Node installed to check calculations, retake handling, bench
 
 Run `npm run build` to create `dist/`. The existing Vercel project builds automatically from the GitHub `main` branch.
 
-The Vercel gateway serves the offline status when no backend is configured. To turn on accounts, backups and benchmarking, run `node server.mjs` on a durable HTTPS host with a persistent volume for `DATA_DIR`. Set `PUBLIC_URL` there to the public GradePath Vercel origin and set `GRADEPATH_BACKEND_ORIGIN` on Vercel to the HTTPS backend origin. Configure `OPENAI_API_KEY` on the backend for tutoring. Use account backup and restore to move study data between devices.
+The gateway runs the shared Node service directly with a migrated GradePath `DATABASE_URL`. Apply numbered PostgreSQL migrations before enabling it. Without that variable, the gateway can still proxy an existing backend using `GRADEPATH_BACKEND_ORIGIN`, or serve browser-only status when both are absent.
 
-Keep checkout closed until account, tutor, and Paystack test flows have passed on that deployment. Hosted checkout requires `GRADEPATH_ENABLE_HOSTED_CHECKOUT=true` on Vercel. Live payments additionally require `GRADEPATH_ENABLE_LIVE_PAYMENTS=true` on the backend with live Paystack configuration.
+The hosted V4 gateway accepts **test-mode** checkout only. See the [implementation status](docs/GRADEPATH_IMPLEMENTATION_STATUS.md) for provider requirements and recovery.

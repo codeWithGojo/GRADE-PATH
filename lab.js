@@ -193,6 +193,19 @@
     flushDraft();
     byId("lab-results").replaceChildren();
     showPanel("lab-checks", true);
+    if (lesson.kind === "css") {
+      // A detached stylesheet parses declarations without applying styles or fetching assets.
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(editor.value);
+      const rules = [...sheet.cssRules].filter(rule => rule.selectorText === ".study-grid");
+      const property = name => rules.map(rule => rule.style.getPropertyValue(name)).filter(Boolean).at(-1);
+      report([
+        { name: "Grid layout", passed: property("display") === "grid", detail: "Set display on .study-grid." },
+        { name: "Two equal tracks", passed: ["repeat(2, 1fr)", "1fr 1fr"].includes(property("grid-template-columns")), detail: "Use two 1fr tracks." },
+        { name: "Space between cards", passed: property("gap") === "1rem", detail: "Use a one-rem gap." }
+      ], lesson);
+      return;
+    }
     if (lesson.kind === "html") {
       report(htmlPreview(editor.value), lesson);
       return;

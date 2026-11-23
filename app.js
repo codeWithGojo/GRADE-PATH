@@ -3,6 +3,9 @@
   "use strict";
   const C = window.GradePathCore;
   const catalog = window.GradePathCatalog;
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+  }
   const byId = id => document.getElementById(id);
   const value = id => byId(id).value;
   const number = id => byId(id).valueAsNumber;
@@ -43,6 +46,8 @@
       localStorage.setItem(C.storageKey, JSON.stringify(state));
       if (storageError) notify("");
       storageError = false;
+      localStorage.setItem("gradepath-device-revision", C.id());
+      window.dispatchEvent(new Event("gradepath-saved"));
     } catch {
       storageError = true;
       notify("Browser storage could not save this change. Export study data before you refresh.");
@@ -169,6 +174,11 @@
 
   function route(focus = false) {
     applyMode();
+    const landing = !location.hash && !new URLSearchParams(location.search).has("reference") && !new URLSearchParams(location.search).has("trxref");
+    byId("landing").hidden = !landing;
+    document.querySelector(".shell").hidden = landing;
+    document.body.classList.toggle("on-landing", landing);
+    if (landing) { window.scrollTo(0, 0); if (focus) byId("landing-heading").focus(); }
     const current = page();
     if (location.hash && location.hash !== "#main" && location.hash !== "#" + current) history.replaceState(null, "", "#" + current);
     for (const section of document.querySelectorAll(".page")) section.hidden = section.id !== current;
@@ -182,7 +192,7 @@
       ? "CGPA Calculator for Nigerian Universities (5.0 and 4.0) | GradePath"
       : pageNames[current] + " | GradePath";
     pageListeners.forEach(fn => fn(current));
-    if (focus && location.hash !== "#main") {
+    if (!landing && focus && location.hash !== "#main") {
       byId(current).querySelector("h1").focus({ preventScroll: true });
       window.scrollTo({ top: 0, behavior: "instant" });
     }

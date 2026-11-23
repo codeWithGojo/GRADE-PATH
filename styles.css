@@ -544,3 +544,26 @@ meter::-moz-meter-bar { background: var(--blue); }
   @keyframes lab-enter { from { opacity: .5; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 }
+
+#cloud-backup, #account-profile-form, #allowance-form { display: grid; gap: .75rem; min-width: 0; }
+#cloud-backup { border-block: 1px solid var(--line); padding-block: 1rem; margin-block: 1rem; }
+#account-profile-form, #allowance-form { align-items: end; }
+#account-profile-form button, #allowance-form button { justify-self: start; }
+#chat-log { max-height: 24rem; overflow-y: auto; overflow-wrap: anywhere; }
+#chat-log p, #tutor-text { white-space: pre-wrap; }
+#chat-log strong { display: block; margin-top: 1rem; }
+#billing-history p { overflow-wrap: anywhere; }
+#exam-trend progress, #weekly-progress { width: 100%; accent-color: var(--blue); }
+#weekly-progress { margin-block: .5rem; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+@media (min-width: 600px) {
+  #account-profile-form { grid-template-columns: minmax(0, 1fr) auto; }
+}
+@media (max-width: 480px) {
+  .home-action { display: grid; grid-template-columns: 1fr; align-items: stretch; }
+  .home-action .button { width: 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .t-tab, .home-action .button { transition: transform 220ms cubic-bezier(.2,1.35,.4,1); }
+  .home-action .button:active { transform: scale(.98); }
+}

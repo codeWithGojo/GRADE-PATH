@@ -146,6 +146,7 @@
     school: '<path d="M5 3h11l3 3v15H5zM8 8h5m-5 5h8m-8 4h8"/>',
     exams: '<path d="M8 4H5v17h14V4h-3M8 2h8v5H8zM8 12h8m-8 4h5"/>',
     study: '<path d="M3 4h5q4 0 4 3v14q0-3-4-3H3zM21 4h-5q-4 0-4 3v14q0-3 4-3h5z"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v5m10-5v5M3 10h18m-13 4h3m2 3h3"/>',
     practice: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
     coding: '<path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18"/>',
     tutor: '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>',

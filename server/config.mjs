@@ -22,11 +22,20 @@ export function settings(env = process.env) {
   if (paymentMode === "live" && paymentKey && !publicOrigin.startsWith("https://")) {
     throw new Error("Set PUBLIC_URL to your public HTTPS origin before enabling live payments.");
   }
+  const mailKey = env.RESEND_API_KEY?.trim() || "";
+  const mailFrom = env.MAIL_FROM?.trim() || "";
+  if (mailKey && !/^[^<>\r\n]+@[^<>\r\n]+$|^[^<>\r\n]+<[^<>\r\n@\s]+@[^<>\r\n]+>$/.test(mailFrom)) throw new Error("Set MAIL_FROM when RESEND_API_KEY is set.");
   return {
+    trustProxy: env.TRUST_PROXY === "true", mail: { key: mailKey, from: mailFrom },
     host, port, publicOrigin, database: resolve(env.DATA_DIR || "./data", "gradepath.sqlite"),
+    databaseUrl: env.DATABASE_URL || "",
     inviteCode: env.SIGNUP_INVITE_CODE || "",
     ai: {
       key: env.OPENAI_API_KEY?.trim() || "", model: env.OPENAI_MODEL || "gpt-4.1-mini",
+      freeLimit: int(env.AI_FREE_LIMIT, 3, 0, 1000, "AI_FREE_LIMIT"),
+      adminLimit: int(env.AI_ADMIN_LIMIT, 60, 0, 10000, "AI_ADMIN_LIMIT"),
+      inputPrice: env.AI_INPUT_USD_PER_MILLION ? Number(env.AI_INPUT_USD_PER_MILLION) : null,
+      outputPrice: env.AI_OUTPUT_USD_PER_MILLION ? Number(env.AI_OUTPUT_USD_PER_MILLION) : null,
       plusLimit: int(env.AI_PLUS_LIMIT, 60, 1, 1000, "AI_PLUS_LIMIT"),
       dailyLimit: int(env.AI_DAILY_LIMIT, 150, 1, 10000, "AI_DAILY_LIMIT")
     },

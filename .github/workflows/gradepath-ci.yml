@@ -1,0 +1,30 @@
+name: GradePath checks
+
+on:
+  push:
+    branches: [main, "feat/**", "codex/**", "claude/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm ci --ignore-scripts
+      - name: Run unit and integration tests
+        run: npm test
+      - name: Verify frontend JavaScript syntax
+        run: node --check account-lifecycle-ui.js
+      - name: Build static distribution
+        run: npm run build
+      - name: Confirm lifecycle UI is published
+        run: test -f dist/account-lifecycle-ui.js

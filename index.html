@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Calculate your CGPA on a 5.0 or 4.0 scale and see what GPA you need across your remaining units. No signup required.">
+  <meta name="description" content="Calculate your CGPA on a 5.0 or 4.0 scale and see what GPA you need across your remaining units. Track school results, plan revision and practise offline. No signup required for local study tools.">
   <link rel="canonical" href="https://gradepath-theta.vercel.app/">
   <meta name="theme-color" content="#101526">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="core.js" defer></script>
   <script src="catalog.js" defer></script>
+  <script src="account-lifecycle-ui.js" defer></script>
   <script src="app.js" defer></script>
   <script src="grades.js" defer></script>
   <script src="study.js" defer></script>
@@ -21,13 +22,33 @@
   <script src="school.js" defer></script>
   <script src="projects.js" defer></script>
   <script src="experience.js" defer></script>
+  <script src="surfaces.js" defer></script>
+  <link rel="stylesheet" href="surfaces.css">
 </head>
 <body>
   <div class="scroll-progress" aria-hidden="true"></div>
   <a class="skip" href="#main">Skip to content</a>
-  <div class="shell">
+  <main id="landing" class="landing">
+    <nav class="landing-nav" aria-label="GradePath home">
+      <a class="wordmark" href="#" aria-label="GradePath home"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>GradePath</a>
+      <div class="landing-links"><a href="#overview">Workspace</a><a href="#tutor">Study Pal</a><a href="#calendar">Calendar</a></div>
+      <a class="landing-login" href="#account">Sign in <span aria-hidden="true">↗</span></a>
+    </nav>
+    <section class="landing-hero" aria-labelledby="landing-heading">
+      <div class="landing-copy"><h1 id="landing-heading" tabindex="-1">Your semester,<br><em>in focus.</em></h1>
+      <p>Track your grades, plan revision and work through tough questions in one study space.</p>
+      <div class="landing-actions"><a class="button" href="#overview">Open workspace <span aria-hidden="true">↗</span></a><a href="#account" data-create-account>Create an account</a></div></div>
+      <div class="landing-art" aria-hidden="true"><canvas id="study-art" width="960" height="820"></canvas></div>
+    </section>
+    <section class="landing-tools" aria-label="Study tools">
+      <a href="#grades" data-enter-university><span class="tool-glyph" aria-hidden="true">∑</span><span><strong>Grades &amp; targets</strong><small>Calculate your next move</small></span><b aria-hidden="true">↗</b></a>
+      <a href="#calendar"><span class="tool-glyph" aria-hidden="true">▦</span><span><strong>Study calendar</strong><small>Plan your week</small></span><b aria-hidden="true">↗</b></a>
+      <a href="#tutor"><span class="tool-glyph" aria-hidden="true">✧</span><span><strong>AI Study Pal</strong><small>Talk through a topic</small></span><b aria-hidden="true">↗</b></a>
+    </section>
+  </main>
+  <div class="shell" hidden>
     <aside class="sidebar">
-      <a class="wordmark" href="#overview" aria-label="GradePath overview"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> GradePath</a>
+      <a class="wordmark" href="#" aria-label="GradePath home"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> GradePath</a>
       <button class="menu-button" id="menu-toggle" data-repo-icon="menu" type="button" aria-expanded="false" aria-controls="workspace-menu"><span>Profile</span></button>
       <div class="mode-control">
         <span class="mode-caption">Your study path</span>
@@ -45,9 +66,10 @@
           <a href="#exams" data-mode-only="secondary" hidden>Exam preparation</a>
           <a href="#projects" data-mode-only="university">Final Year Projects</a>
           <a href="#study">Study Room</a>
+          <a href="#calendar">Study calendar</a>
           <a href="#practice">Practice</a>
           <a href="#coding">Coding Lab</a>
-          <a href="#tutor">AI tutor</a>
+          <a href="#tutor">AI Study Pal</a>
           <a href="#account">Account &amp; Plus</a>
         </nav>
         <div class="sidebar-foot">
@@ -200,6 +222,8 @@
               <details class="card settings">
                 <summary>Grading settings</summary>
                 <form id="grading-settings">
+                  <label class="field">University grade-point preset<select id="university-preset"><option value="">Custom points</option><option value="unilag">UNILAG DLI Management Sciences · 2021–24 handbook</option></select></label>
+                  <a href="https://www.dli.unilag.edu.ng/wp-content/uploads/2021/04/Handbook-Management-Sciences-2021-2024.pdf" target="_blank" rel="noopener">Check the programme handbook, p. 23</a>
                   <label class="field">Grading scale
                     <select id="grade-scale"><option value="5">5.0 scale</option><option value="4">4.0 scale</option></select>
                   </label>
@@ -316,6 +340,7 @@
               <section class="card">
                 <h2>Mock results</h2>
                 <p id="exam-mock" class="big-number">No mock scores yet</p>
+                <div class="list" id="exam-trend" aria-label="Recent timed practice scores"></div>
                 <p id="exam-mock-detail" class="help">Enter mock marks to see your strongest subjects and revision priorities.</p>
                 <div id="exam-insights" class="list"></div>
               </section>
@@ -329,6 +354,7 @@
                   </div>
                   <div class="actions"><button class="primary" type="submit">Start practice</button><button id="ask-exam-tutor" type="button">Ask the tutor</button></div>
                 </form>
+                <button type="button" id="jamb-mock" hidden>Start four-subject JAMB mini mock</button>
                 <p id="exam-practice-status" class="status" role="status"></p>
               </section>
               <section class="card"><h2>Official exam resources</h2><div id="exam-resources" class="list"></div></section>
@@ -343,7 +369,7 @@
             <a href="#exams" data-mode-only="secondary" hidden>Exam preparation</a>
             <a href="#projects" data-mode-only="university">Final Year Projects</a>
             <a href="#coding">Coding Lab</a>
-            <a href="#tutor">AI tutor</a>
+            <a href="#tutor">AI Study Pal</a>
           </nav>
           <div class="split">
             <div class="stack">
@@ -381,6 +407,9 @@
                   <p id="task-status" class="status" role="status"></p>
                 </form>
                 <label class="field week-control">Week of <input id="plan-week" type="date"></label>
+                <label class="field">Weekly study goal (minutes)<input type="number" id="weekly-goal" min="5" max="10080" step="5" value="120"></label>
+                <progress id="weekly-progress" max="120" value="0" aria-label="Weekly study minutes completed"></progress>
+                <button type="button" class="quiet" id="revision-reminder">Download this week’s revision reminders</button>
                 <p id="week-summary" class="help"></p>
                 <div id="tasks" class="list"></div>
               </section>
@@ -427,6 +456,7 @@
                   </form>
                 </details>
                 <p id="note-status" class="status" role="status"></p>
+                <label class="field">Search notes<input type="search" id="notes-search" placeholder="Title, course or note text"></label>
                 <div id="notes" class="list"></div>
               </section>
             </div>
@@ -434,6 +464,13 @@
           <datalist id="known-courses"></datalist>
         </section>
 
+        <section class="page" id="calendar" aria-labelledby="calendar-heading" hidden>
+          <div class="page-heading"><h1 id="calendar-heading" tabindex="-1">Study calendar</h1><p>Your revision sessions and assessments, day by day.</p></div>
+          <div class="calendar-layout"><section class="card cal-main"><div class="cal-controls"><div class="cal-month"><button id="cal-prev" aria-label="Previous month">‹</button><h2 id="cal-month" aria-live="polite"></h2><button id="cal-next" aria-label="Next month">›</button></div><button id="cal-today">Today</button></div>
+          <div class="cal-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div><div class="cal-days" id="cal-days" aria-label="Choose a day"></div></section>
+          <aside class="card cal-agenda"><h2 id="cal-day-title">Upcoming study dates</h2><div id="cal-agenda"></div><button id="cal-add" class="primary">Add study session</button>
+          <form id="cal-form" hidden><label class="field">Session title<input id="cal-title" maxlength="120" required></label><label class="field">Duration (minutes)<input id="cal-minutes" type="number" min="5" max="300" value="25" required></label><button class="primary">Save session</button><button type="button" id="cal-cancel" class="quiet">Cancel</button></form><p id="cal-status" role="status" class="status"></p></aside></div>
+        </section>
         <!-- Practice -->
         <section class="page" id="practice" aria-labelledby="practice-heading" hidden>
           <div class="page-heading"><h1 id="practice-heading" tabindex="-1">Practice</h1><p>Test yourself, check the explanations, and revisit what you missed.</p></div>
@@ -554,27 +591,34 @@
 
         <!-- Tutor -->
         <section class="page" id="tutor" aria-labelledby="tutor-heading" hidden>
-          <div class="page-heading"><h1 id="tutor-heading" tabindex="-1">AI tutor</h1><p>Ask for an explanation, get a coding hint, or make a quiz from your notes.</p></div>
+          <div class="page-heading"><h1 id="tutor-heading" tabindex="-1">AI Study Pal</h1></div>
           <div class="split wide-left">
             <section class="card">
-              <div class="section-head"><h2>Study session</h2><span class="tag" id="ai-mode-status">Offline workspace</span></div>
+              <div class="pal-welcome"><div class="pal-orb" aria-hidden="true"><i></i></div><h2>What are we learning today?</h2></div>
+              <div class="pal-prompts" aria-label="Start a question"><button type="button" data-pal="Explain a concept">Explain a concept</button><button type="button" data-pal="Plan my revision">Plan revision</button><button type="button" data-pal="Review my code">Review code</button></div>
+              <div class="section-head pal-access"><span class="sr-only">Study session</span><span class="tag" id="ai-mode-status">Offline workspace</span></div>
               <form id="tutor-form">
-                <div class="fields two">
+                <label class="field full">Your question <textarea id="tutor-question" rows="2" maxlength="1500" placeholder="Explain CPU scheduling using an example." required></textarea></label>
+                <button class="primary" type="submit" id="ask-ai">Ask Study Pal <span aria-hidden="true">↗</span></button>
+                <details id="pal-options"><summary>Study tools and attachments</summary><div class="fields two">
                   <label class="field">I want to
                     <select id="tutor-mode">
                       <option value="explain">Understand a topic</option>
                       <option value="notes">Ask my notes</option>
                       <option value="quiz">Generate a practice quiz</option>
                       <option value="code">Get a coding hint</option>
+                      <option value="revision">Plan my revision</option>
+                      <option value="flashcards">Make flashcards from notes</option>
+                      <option value="review">Review a mistake</option>
                     </select>
                   </label>
                   <label class="field">Course (optional) <input id="tutor-course" list="known-courses" maxlength="24"></label>
                   <label class="field full" id="tutor-note-label" hidden>Notes to include <select id="tutor-note"><option value="">Choose your notes</option></select></label>
-                  <label class="field full">Question or topic <textarea id="tutor-question" rows="4" maxlength="1500" placeholder="Explain CPU scheduling using an example." required></textarea></label>
+                  
                   <label class="field full" id="tutor-code-label" hidden>Code to include (optional) <textarea id="tutor-code" rows="6" maxlength="10000" spellcheck="false"></textarea></label>
-                </div>
+                </div><label class="check"><input id="remember-chat" type="checkbox"> Save this conversation on this device</label>
+                <details><summary>Saved conversation</summary><div id="chat-log"></div><button type="button" id="clear-chat">Clear conversation</button></details></details>
                 <p class="help" id="tutor-context">Sending shares your question and any selected notes or code with the AI provider.</p>
-                <button class="primary" type="submit" id="ask-ai">Ask the tutor</button>
                 <p id="tutor-status" class="status" role="status"></p>
               </form>
               <article id="tutor-answer" class="tutor-answer" hidden>
@@ -584,7 +628,7 @@
               </article>
             </section>
             <section class="card">
-              <h2>Tutor access</h2>
+              <h2>Your study session</h2>
               <p id="tutor-access">AI tutor access is coming soon.</p>
               <a class="button" href="#account">Open account settings</a>
               <p class="help">Use the answer to guide your revision. Check important details against your course materials.</p>
@@ -594,7 +638,10 @@
 
         <!-- Account -->
         <section class="page" id="account" aria-labelledby="account-heading" hidden>
-          <div class="page-heading"><h1 id="account-heading" tabindex="-1">Account &amp; Plus</h1><p>Connect the AI tutor, manage your subscription, and opt in to peer comparisons.</p></div>
+          <header class="account-banner"><div><a class="account-back" href="#overview">← Workspace</a><h1 id="account-heading" tabindex="-1">Your account</h1><p id="flow-subtitle">Your study space, across devices.</p></div><div class="account-emblem" aria-hidden="true"><span>g</span></div></header>
+          <div id="account-loading" aria-label="Loading account" role="status"><i></i><i></i><i></i></div>
+          <nav id="account-nav" class="account-nav" aria-label="Account settings" hidden></nav>
+          <section id="lifecycle-stage" class="card lifecycle-stage" hidden></section>
           <div class="split">
             <div class="stack">
               <section class="card">
@@ -606,16 +653,24 @@
                     <label class="field">Password <input id="auth-password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required></label>
                     <label class="field" id="invite-label" hidden>Invite code for new accounts <input id="auth-invite" maxlength="120"></label>
                   </div>
-                  <div class="actions"><button class="primary" type="submit" value="login">Sign in</button><button type="submit" value="register">Create account</button></div>
+                  <p class="help">Use a nickname if you prefer. Keep addresses, school IDs and contact details out of shared study notes. If you are under your school’s age for independent sign-up, ask a parent or guardian to help.</p>
+                  <div class="auth-actions"><button class="primary" id="auth-primary" type="submit" value="login">Sign in</button><button type="button" id="auth-switch" class="link-action">Create an account</button><button type="button" id="auth-forgot" class="link-action">Forgot password?</button></div>
                 </form>
                 <div id="cloud-backup" hidden>
-                  <p class="help">Save a copy to your account or restore it on another device.</p>
-                  <div class="actions"><button id="cloud-save" type="button">Save to account</button><button id="cloud-restore" type="button">Restore from account</button></div>
+                  <div class="profile-path"><h3>Study path</h3><p class="help" id="profile-path-detail"></p><button type="button" data-flow="path" class="link-action">Edit school and course</button></div>
+                  <form id="allowance-form" hidden><h3>Tutor allowances</h3>
+                    <label class="field">Tier<select id="allowance-tier"><option value="free">Free · daily</option><option value="plus">Plus · paid period</option><option value="admin">Admin · testing</option></select></label>
+                    <label class="field">Successful requests<input id="allowance-count" type="number" min="0" max="10000" required></label>
+                    <button type="submit">Update allowance</button></form>
+                  <form id="account-profile-form"><label class="field">Display name (optional)<input maxlength="60" id="account-display-name" autocomplete="nickname"></label><button type="submit">Save name</button></form>
+                  <div class="sync-controls"><h3>Cloud workspace</h3><p id="sync-status" role="status">Saved on this device.</p>
+                  <p class="help">Choose which workspace to start with. Edits then sync while this tab is connected. Export a backup before switching accounts on a shared device.</p>
+                  <div class="actions"><button id="cloud-save" type="button">Save to account</button><button id="cloud-restore" type="button">Restore from account</button></div></div>
                 </div>
                 <button id="sign-out" type="button" hidden>Sign out</button>
                 <p id="account-status" class="status" role="status"></p>
               </section>
-              <section class="card" data-mode-only="university">
+              <section class="card benchmark-card" data-mode-only="university">
                 <div class="section-head"><h2>Peer benchmark</h2><span class="tag">Opt-in</span></div>
                 <p class="help">Compare with participating students in the same school, programme, level, and grading setup. Results use self-reported grades.</p>
                 <p class="help">Joining is optional. Your CGPA and cohort details are used to calculate your comparison. Ranks appear when at least 25 students participate. Use Leave benchmark to remove your entry.</p>
@@ -628,7 +683,8 @@
                   </div>
                   <div class="actions"><button id="cohort-join" class="primary" type="submit">Share &amp; view benchmark</button><button id="cohort-leave" type="button" hidden>Leave benchmark</button></div>
                   <p id="cohort-status" class="status" role="status"></p>
-                  <div id="cohort-result"></div>
+                  <p id="personal-milestones" class="help"></p>
+                <div id="cohort-result"></div>
                 </form>
               </section>
             </div>
@@ -638,6 +694,7 @@
               <ul><li>AI tutor for questions about your notes</li><li>Personalised practice questions</li><li>Coding hints and debugging walkthroughs</li></ul>
               <p id="plus-status" class="help">Subscriptions are currently closed.</p>
               <div class="actions"><button id="checkout" class="primary" type="button" disabled hidden>Plus is coming soon</button><button id="manage-sub" type="button" hidden>Manage subscription</button></div>
+              <div id="billing-history" class="list"></div>
               <p id="billing-status" class="status" role="status"></p>
             </section>
           </div>
