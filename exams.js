@@ -59,7 +59,15 @@
     const mark = active === "JAMB" ? (info.fullMock ? info.total + " / 400" : "Enter four mock scores")
       : info.mean === null ? "No mock scores yet" : info.mean.toFixed(1) + " / 100";
     byId("exam-mock").textContent = mark;
-    const date = current?.date ? " · Exam " + C.dateText(current.date) : "";
+    const days = current?.date ? C.daysBetween(C.localDay(), current.date) : null;
+    const date = days === null ? "" : " · " + C.dateText(current.date) + (days > 0 ? " · " + days + " days to go" : days === 0 ? " · Exam today" : " · Exam date passed");
+    byId("exam-trend").replaceChildren(...state.attempts.filter(a => a.exam === active).slice(0, 5).map(a => {
+      const label = el("label", C.dateText(a.date) + " · " + a.topic + " · " + a.correct + "/" + a.total, "field");
+      const bar = el("progress");
+      bar.max = a.total; bar.value = a.correct;
+      label.append(bar);
+      return label;
+    }));
     const goal = current?.target;
     const progress = active === "JAMB" && info.fullMock && goal !== null
       ? (info.total >= goal ? " · Mock meets your " + goal + " target" : " · " + (goal - info.total) + " points below your target") : "";

@@ -1,6 +1,6 @@
 const paths = new Set([
   "status", "register", "login", "logout", "workspace", "benchmark",
-  "account/profile", "password/forgot", "password/reset", "account", "account/verify", "account/verify/request", "account/export",
+  "admin/allowance", "account/profile", "password/forgot", "password/reset", "account", "account/verify", "account/verify/request", "account/export",
   "tutor", "billing/start", "billing/verify", "billing/manage", "webhooks/paystack"
 ]);
 const unavailable = { online: false, aiConfigured: false, billingMode: "", account: null };
@@ -22,7 +22,7 @@ export async function forward(request, environment = process.env, send = fetch) 
     const upstream = new URL(configured);
     if (upstream.protocol !== "https:" || upstream.origin === url.origin || upstream.username || upstream.password) throw new Error();
     const headers = new Headers();
-    for (const name of ["content-type", "origin", "cookie", "x-paystack-signature"]) {
+    for (const name of ["content-type", "accept", "origin", "cookie", "x-paystack-signature"]) {
       const value = request.headers.get(name);
       if (value) headers.set(name, value);
     }
@@ -34,6 +34,7 @@ export async function forward(request, environment = process.env, send = fetch) 
       method: request.method, headers, body, redirect: "error", signal: AbortSignal.timeout(39_000)
     });
     const output = new Headers({ "Cache-Control": "no-store", "Content-Type": "application/json; charset=utf-8" });
+    if (result.headers.get("content-type")?.includes("application/x-ndjson")) output.set("Content-Type", "application/x-ndjson");
     const disposition = result.headers.get("content-disposition");
     if (disposition && /^attachment; filename="[\w.-]+"$/.test(disposition)) output.set("Content-Disposition", disposition);
     for (const cookie of result.headers.getSetCookie()) output.append("Set-Cookie", cookie);

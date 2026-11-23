@@ -3,6 +3,9 @@
   "use strict";
   const C = window.GradePathCore;
   const catalog = window.GradePathCatalog;
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+  }
   const byId = id => document.getElementById(id);
   const value = id => byId(id).value;
   const number = id => byId(id).valueAsNumber;
@@ -43,6 +46,7 @@
       localStorage.setItem(C.storageKey, JSON.stringify(state));
       if (storageError) notify("");
       storageError = false;
+      localStorage.setItem("gradepath-device-revision", C.id());
       window.dispatchEvent(new Event("gradepath-saved"));
     } catch {
       storageError = true;

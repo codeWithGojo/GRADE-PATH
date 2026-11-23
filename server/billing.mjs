@@ -81,9 +81,10 @@ export function createBilling(db, config, fetcher) {
     const paid = enabled ? await currentPayment(userId) : null;
     const sub = enabled ? await currentSubscription(userId) : null;
     const intent = enabled ? await pending(userId) : null;
+    const history = enabled ? await db.prepare("SELECT reference,paid_at,expires,revoked FROM payments WHERE user_id=? AND mode=? AND plan=? ORDER BY paid_at DESC LIMIT 20").all(userId, mode, plan) : [];
     const active = Boolean(paid?.expires > Date.now());
     return {
-      active, paidUntil: paid?.expires ?? null, paidAt: paid?.paid_at ?? null,
+      history, status: sub?.status || "", active, paidUntil: paid?.expires ?? null, paidAt: paid?.paid_at ?? null,
       canManage: Boolean(paid || sub),
       hasSubscription: Boolean(sub && isActiveSubscription(sub.status)),
       pending: intent?.reference ?? null, canContinue: Boolean(intent?.url)
@@ -243,6 +244,14 @@ export function createBilling(db, config, fetcher) {
     try { message = JSON.parse(raw.toString("utf8")); } catch { throw new AppError(400, "Invalid webhook payload."); }
     const { event, data } = message ?? {};
     if (!data || (data.domain && data.domain !== mode)) return;
+    if (event === "invoice.payment_failed") {
+      const code = data.subscription?.subscription_code;
+      const customer = data.customer?.customer_code;
+      if (validSubscription(code) && typeof customer === "string") await db.prepare(
+        "UPDATE subscriptions SET status='attention' WHERE code=? AND customer=? AND plan=? AND mode=? AND status='active'"
+      ).run(code, customer, plan, mode);
+      return;
+    }
     if (["subscription.create", "subscription.not_renew", "subscription.disable"].includes(event)) {
       await saveSubscription(data, event);
       return;
@@ -274,7 +283,10 @@ export function createBilling(db, config, fetcher) {
       if (recorded) return;
       const charge = await verifiedCharge(reference);
       if (charge.customer?.customer_code !== customer) throw new AppError(409, "Renewal payment customer did not match.");
-      await recordCharge(owner.user_id, reference, charge);
+      await transaction(db, async () => {
+        await recordCharge(owner.user_id, reference, charge);
+        await db.prepare("UPDATE subscriptions SET status='active' WHERE code=? AND mode=? AND plan=? AND status='attention'").run(code, mode, plan);
+      });
       return;
     }
     if (event === "refund.processed" && data.amount >= amount) {

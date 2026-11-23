@@ -20,7 +20,7 @@ import { issueToken, consumeToken, markVerified, exportAccount, deleteAccount } 
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const staticFiles = new Map([
-  ["/", "index.html"], ["/index.html", "index.html"], ["/styles.css", "styles.css"],
+  ["/", "index.html"], ["/index.html", "index.html"], ["/styles.css", "styles.css"], ["/sw.js","sw.js"],
   ...["core", "catalog", "account-lifecycle-ui", "app", "grades", "study", "exams", "lab", "online", "school", "projects", "experience", "appearance"].map(name => ["/" + name + ".js", name + ".js"]),
   ["/runner.html", "runner.html"], ...["sora.woff", "inter.woff"].map(name => ["/vendor/fonts/" + name, "vendor/fonts/" + name]), ["/favicon.svg", "favicon.svg"], ["/vendor/pdf.min.mjs", "vendor/pdf.min.mjs"],
   ["/vendor/pdf.worker.min.mjs", "vendor/pdf.worker.min.mjs"]
@@ -114,6 +114,7 @@ export function createApp(config, fetcher = globalThis.fetch) {
   const db = config.databaseUrl ? postgres(config.databaseUrl) : createDatabase(config.database);
   const billing = createBilling(db, config.payment, fetcher);
   const tutor = createTutor(db, config.ai, billing, fetcher);
+  const localBuild = Date.now().toString(36);
   const localLimit = limiter();
   async function limit(key, maximum, span) {
     if (!config.databaseUrl) return localLimit(key, maximum, span);
@@ -162,7 +163,8 @@ export function createApp(config, fetcher = globalThis.fetch) {
     const { method } = request;
     if (staticFiles.has(pathname) && ["GET", "HEAD"].includes(method)) {
       const file = staticFiles.get(pathname);
-      const data = await readFile(resolve(root, file));
+      let data = await readFile(resolve(root, file));
+      if (file === "sw.js") data = Buffer.from(data.toString("utf8").replace("__BUILD__", localBuild));
       const type = file.split(".").at(-1);
       response.writeHead(200, {
         "Content-Type": contentTypes[type], "Content-Security-Policy": file === "runner.html" ? runnerPolicy : mainPolicy,
@@ -239,6 +241,15 @@ export function createApp(config, fetcher = globalThis.fetch) {
       json(response, 200, { sent: true });
       return;
     }
+    if (pathname === "/api/admin/allowance" && method === "PUT") {
+      const actor = await db.prepare("SELECT role FROM users WHERE id=?").get(user.id);
+      if (actor?.role !== "admin") throw new AppError(403, "Administrator access required.");
+      const { tier, allowance } = await jsonBody(request, 500);
+      if (!["free","plus","admin"].includes(tier) || !Number.isInteger(allowance) || allowance < 0 || allowance > 10000) throw new AppError(400, "Choose a valid tier and allowance.");
+      await db.prepare("INSERT INTO ai_limits VALUES (?,?) ON CONFLICT(tier) DO UPDATE SET allowance=excluded.allowance").run(tier, allowance);
+      json(response, 200, { tier, allowance });
+      return;
+    }
     if (pathname === "/api/account/profile" && method === "PUT") {
       const input = await jsonBody(request, 500);
       if (typeof input.name !== "string" || input.name.length > 60) throw new AppError(400, "Use a name of up to 60 characters.");
@@ -312,8 +323,22 @@ export function createApp(config, fetcher = globalThis.fetch) {
     }
     if (pathname === "/api/tutor" && method === "POST") {
       await limit("tutor-" + user.id, 8, 60_000);
-      const result = await tutor.ask(user, await jsonBody(request));
-      json(response, 200, { ...result, remaining: (await tutor.allowance(user.id)).remaining });
+      const input = await jsonBody(request);
+      const stream = request.headers.accept === "application/x-ndjson";
+      const emit = message => {
+        if (!response.headersSent) response.writeHead(200, { "Content-Type": "application/x-ndjson", "Cache-Control": "no-store" });
+        response.write(JSON.stringify(message) + "\n");
+      };
+      try {
+        const result = await tutor.ask(user, input, stream ? delta => emit({ delta }) : undefined);
+        const answer = { ...result, remaining: (await tutor.allowance(user.id)).remaining };
+        if (stream) { emit({ result: answer }); response.end(); }
+        else json(response, 200, answer);
+      } catch (error) {
+        if (!response.headersSent) throw error;
+        emit({ error: "The tutor response was interrupted. Please try again." });
+        response.end();
+      }
       return;
     }
     if (pathname === "/api/billing/start" && method === "POST") {
@@ -335,8 +360,13 @@ export function createApp(config, fetcher = globalThis.fetch) {
     throw new AppError(404, "Page not found.");
   }
 
+  let localQueue = Promise.resolve();
   const server = createServer({ requestTimeout: 40_000, headersTimeout: 15_000 }, (request, response) => {
-    handle(request, response).catch(error => {
+    // SQLite shares one connection. Keep asynchronous statements from interleaving
+    // with another local request inside an open transaction.
+    const pending = config.databaseUrl ? handle(request, response) : localQueue.then(() => handle(request, response));
+    if (!config.databaseUrl) localQueue = pending.catch(() => {});
+    pending.catch(error => {
       if (response.headersSent || response.destroyed) return;
       if (error instanceof AppError) json(response, error.status, { error: error.message });
       else {

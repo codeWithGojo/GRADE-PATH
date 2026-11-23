@@ -65,7 +65,8 @@ const migrations = [
     ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student' CHECK(role IN ('student','admin','educator'));
     CREATE TABLE tutor_metrics (request_id TEXT PRIMARY KEY REFERENCES ai_uses(id) ON DELETE CASCADE,
       input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL, latency_ms INTEGER NOT NULL, cost_usd REAL);
-  ` }
+  ` },
+  { id: 4, name: "ai_limits", sql: "CREATE TABLE ai_limits (tier TEXT PRIMARY KEY CHECK(tier IN ('free','plus','admin')), allowance INTEGER NOT NULL CHECK(allowance BETWEEN 0 AND 10000));" }
 ];
 
 export function migrate(db, list = migrations) {

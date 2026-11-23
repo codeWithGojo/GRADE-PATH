@@ -176,6 +176,14 @@
     settingsInputs(state.scale, state.points);
   }
 
+  byId("university-preset").addEventListener("change", () => {
+    if (value("university-preset") !== "unilag") return;
+    byId("grade-scale").value = 5;
+    settingsInputs(5, C.gradeDefaults[5]);
+  });
+  byId("grading-settings").addEventListener("input", event => {
+    if (event.target.id === "grade-scale" || event.target.id.startsWith("points-")) byId("university-preset").value = "";
+  });
   byId("grade-scale").addEventListener("change", () => {
     const scale = Number(value("grade-scale"));
     settingsInputs(scale, scale === state.scale ? state.points : C.gradeDefaults[scale]);
@@ -257,6 +265,7 @@
     byId("share-panel").hidden = !last;
     if (last && Number(value("grade-scale")) !== state.scale) fillSettings();
     byId("grade-scale").disabled = Boolean(last);
+    byId("university-preset").disabled = Boolean(last && state.scale !== 5);
     byId("scale-hint").textContent = last
       ? "Grade-point and retake changes recalculate saved results. The scale is fixed while semesters are saved."
       : "Set grade points to match your school.";

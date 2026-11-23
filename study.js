@@ -89,6 +89,21 @@
     state.weeklyGoal = event.target.valueAsNumber;
     commit();
   });
+  byId("revision-reminder").addEventListener("click", () => {
+    const tasks = weekTasks(C.weekStart(selectedWeek.value || C.localDay())).filter(task => !task.completed);
+    if (!tasks.length) { status("task-status", "Schedule a study task for this week first."); return; }
+    const escape = s => s.replace(/\\/g, "\\\\").replace(/[\r\n]+/g, " ").replace(/([,;])/g, "\\$1");
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const lines = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//GradePath//Study planner//EN"];
+    for (const task of tasks) {
+      lines.push("BEGIN:VEVENT", "UID:" + encodeURIComponent(task.id) + "@gradepath", "DTSTAMP:" + stamp,
+        "DTSTART;VALUE=DATE:" + task.date.replaceAll("-", ""), "SUMMARY:" + escape(task.title),
+        "DESCRIPTION:" + task.minutes + " minutes", "BEGIN:VALARM", "TRIGGER:-PT12H", "ACTION:DISPLAY",
+        "DESCRIPTION:Revision reminder","END:VALARM","END:VEVENT");
+    }
+    lines.push("END:VCALENDAR");
+    GP.download("gradepath-revision.ics", new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar" }));
+  });
   selectedWeek.addEventListener("change", renderTasks);
   byId("task-form").addEventListener("submit", event => {
     event.preventDefault();

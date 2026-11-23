@@ -33,6 +33,41 @@
     return result;
   }
 
+  async function askTutor(input, owner) {
+    if (!["explain","revision","review","code"].includes(input.mode) || !window.TextDecoderStream) return api("/tutor", "POST", input);
+    const response = await fetch("/api/tutor", { method: "POST", credentials: "same-origin",
+      headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
+      body: JSON.stringify(input), signal: AbortSignal.timeout(45000) });
+    if (!response.headers.get("content-type")?.includes("ndjson")) {
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Unable to reach the tutor.");
+      return body;
+    }
+    let buffer = "", answer = "", result;
+    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += value;
+        const lines = buffer.split("\n");
+        buffer = lines.pop();
+        for (const line of lines) {
+          const message = JSON.parse(line);
+          if (message.error) throw new Error(message.error);
+          if (message.result) result = message.result;
+          if (message.delta && session.account?.id === owner) {
+            answer += message.delta;
+            byId("tutor-text").textContent = answer;
+            byId("tutor-answer").hidden = false;
+          }
+        }
+      }
+    } finally { reader.releaseLock(); }
+    if (!result) throw new Error("The response was interrupted. Try your question again.");
+    return result;
+  }
+
   function renderBenchmark() {
     const output = byId("cohort-result");
     output.replaceChildren();
@@ -91,6 +126,7 @@
     signIn.hidden = !session.online || Boolean(account);
     byId("sign-out").hidden = !account;
     byId("cloud-backup").hidden = !account || !session.workspaceBackup;
+    byId("allowance-form").hidden = account?.role !== "admin";
     byId("account-display-name").value = account?.name || "";
     if (binding && binding.owner !== account?.id && session.online) detachSync();
     byId("invite-label").hidden = !session.inviteRequired;
@@ -108,7 +144,7 @@
         : !account ? "Sign in for three free AI questions each day."
           : account.tutorRemaining ? account.tutorRemaining + " of " + account.tutorLimit + " requests left "
             + (bill?.active ? "this paid period." : "today.")
-            : bill?.active ? "You’ve used your allowance for this paid period." : "You’ve used today’s three free questions. Come back tomorrow.";
+            : bill?.active ? "You’ve used your allowance for this paid period." : "You’ve used today’s tutoring allowance. Come back tomorrow.";
     byId("ask-ai").disabled = !session.aiConfigured || !account?.tutorRemaining;
 
     byId("plus-status").textContent = !session.billingMode ? "Subscriptions are currently closed."
@@ -117,6 +153,9 @@
           : bill?.pending ? "You have a payment waiting for confirmation."
             : bill?.hasSubscription ? "Manage your existing subscription to check its renewal."
               : account ? "Your plan renews monthly until cancelled." : "Sign in to subscribe.");
+    if (bill?.status === "attention") byId("plus-status").textContent += " Renewal payment needs attention.";
+    byId("billing-history").replaceChildren(...(bill?.history || []).map(p => el("p",
+      new Date(p.paid_at).toLocaleDateString() + " · ₦1,000 · " + (p.revoked ? "Refunded" : "Verified") + " · " + p.reference, "help")));
     byId("plus-plan").hidden = !session.billingMode;
     const checkout = byId("checkout");
     checkout.hidden = !session.billingMode;
@@ -175,8 +214,8 @@
   let binding = null;
   try { binding = JSON.parse(sessionStorage.getItem("gradepath-sync") || "null"); } catch {}
   let timer, writing = false, dirty = false;
-  function remember(owner, base) {
-    binding = { owner, base };
+  function remember(owner, base, device = localStorage.getItem("gradepath-device-revision")) {
+    binding = { owner, base, device };
     try { sessionStorage.setItem("gradepath-sync", JSON.stringify(binding)); } catch {}
   }
   function detachSync() {
@@ -187,21 +226,24 @@
     status("sync-status", "Saved on this device.");
   }
   function scheduleSync() {
-    if (!binding || binding.owner !== session.account?.id) return;
+    if (!binding || (session.online && binding.owner !== session.account?.id)) return;
     dirty = true;
+    binding.pending = localStorage.getItem("gradepath-device-revision");
+    try { sessionStorage.setItem("gradepath-sync", JSON.stringify(binding)); } catch {}
     clearTimeout(timer);
     status("sync-status", navigator.onLine ? "Changes waiting to sync…" : "Offline · changes saved on this device.");
-    timer = setTimeout(upload, 1400);
+    timer = setTimeout(upload, 3200);
   }
   async function upload() {
     if (writing || !dirty || !binding || binding.owner !== session.account?.id || !navigator.onLine) return;
     const current = binding;
     writing = true;
     dirty = false;
+    const sentDevice = localStorage.getItem("gradepath-device-revision");
     try {
       const result = await api("/workspace", "PUT", { ...current, backup: state });
       if (binding !== current) return;
-      remember(current.owner, result.updated);
+      remember(current.owner, result.updated, sentDevice);
       status("sync-status", "Synced to your account.");
     } catch (error) {
       if (binding !== current) return;
@@ -214,7 +256,56 @@
     }
   }
   window.addEventListener("gradepath-saved", scheduleSync);
-  window.addEventListener("online", async () => { await refresh(); scheduleSync(); });
+  async function reconcile() {
+    const current = binding;
+    if (!current || current.owner !== session.account?.id || writing || !navigator.onLine) return;
+    const device = localStorage.getItem("gradepath-device-revision");
+    if (!dirty && current.device !== device && current.pending !== device) {
+      detachSync();
+      status("sync-status", "Device data changed outside this sync session. Choose which copy to keep.");
+      return;
+    }
+    if (dirty || current.device !== device) {
+      scheduleSync();
+      return;
+    }
+    try {
+      const cloud = await api("/workspace");
+      if (binding !== current || dirty || writing || current.owner !== cloud.owner || cloud.updated === current.base) return;
+      if (!cloud.backup) { status("sync-status", "No cloud copy. Your local workspace is available."); return; }
+      // Empty academic records require the same explicit restore choice as first login.
+      const normalized = C.normalizeState(cloud.backup);
+      const fields = ["semesters","schoolTerms","notes","tasks","profiles","materials","attempts","questions","labPassed"];
+      if (fields.some(key => state[key].length && !normalized[key].length)) {
+        detachSync();
+        status("sync-status", "The account copy removes saved work. Export your local copy, then choose Save or Restore.");
+        return;
+      }
+      Object.assign(state, normalized);
+      window.dispatchEvent(new Event("gradepath-import"));
+      binding = null;
+      const stored = commit();
+      window.dispatchEvent(new Event("gradepath-mode"));
+      if (stored) remember(cloud.owner, cloud.updated);
+      status("sync-status", stored ? "Updated from your account." : "Export this workspace. Device storage is full.");
+    } catch (error) { status("sync-status", error.message); }
+  }
+  window.addEventListener("online", async () => { await refresh(); await reconcile(); });
+  window.addEventListener("focus", reconcile);
+  window.addEventListener("storage", event => {
+    if (event.key === C.storageKey && binding) {
+      detachSync();
+      status("sync-status", "Another tab edited the device workspace. Reload and choose a copy to sync.");
+    }
+  });
+  byId("allowance-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    try {
+      await api("/admin/allowance", "PUT", { tier: value("allowance-tier"), allowance: byId("allowance-count").valueAsNumber });
+      await refresh();
+      status("account-status", "Allowance updated.", "success");
+    } catch (error) { status("account-status", error.message, "error"); }
+  });
   byId("account-profile-form").addEventListener("submit", async event => {
     event.preventDefault();
     try {
@@ -320,7 +411,7 @@
   function syncTutorFields() {
     byId("tutor-code-label").hidden = tutorMode.value !== "code";
     byId("tutor-note-label").hidden = !["notes", "quiz", "flashcards"].includes(tutorMode.value);
-    byId("tutor-note").required = tutorMode.value === "notes";
+    byId("tutor-note").required = ["notes", "flashcards"].includes(tutorMode.value);
     const line = "Sending shares your question and any selected notes or code with the AI provider.";
     byId("tutor-context").textContent = examContext ? "Focus: " + examContext.exam + " · " + examContext.subject + ". " + line : line;
   }
@@ -385,15 +476,17 @@
     askButton.disabled = true;
     byId("tutor-answer").hidden = true;
     quizDraft = null;
+    byId("tutor-sources").replaceChildren();
+    byId("save-ai-quiz").hidden = true;
     status("tutor-status", "Preparing your response…");
     try {
-      const result = await api("/tutor", "POST", {
+      const result = await askTutor({
         mode, question, course, code, previous,
         level: state.mode === "secondary" ? state.schoolClass : "University",
         confidence: mode === "revision" ? state.profiles.slice(0, 5).map(p => p.topic + " " + p.confidence + "/5").join(", ") : "",
         exam: examContext?.exam || "", subject: examContext?.subject || "",
         extracts: ["notes", "quiz", "flashcards"].includes(mode) ? noteExtracts(note, question) : []
-      });
+      }, questionOwner);
       if (!session.account || session.account.id !== questionOwner) return;
       session.account.tutorRemaining = result.remaining;
       if (byId("remember-chat").checked) {
@@ -503,7 +596,7 @@
   });
   syncTutorFields();
   refresh().then(async () => {
-    if (binding && binding.owner === session.account?.id) scheduleSync();
+    await reconcile();
     if (callbackReference) {
       go("account");
       if (session.account) await verifyPayment(callbackReference);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Calculate your CGPA on a 5.0 or 4.0 scale and see what GPA you need across your remaining units. No signup required.">
+  <meta name="description" content="Calculate your CGPA on a 5.0 or 4.0 scale and see what GPA you need across your remaining units. Track school results, plan revision and practise offline. No signup required for local study tools.">
   <link rel="canonical" href="https://gradepath-theta.vercel.app/">
   <meta name="theme-color" content="#101526">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -201,6 +201,8 @@
               <details class="card settings">
                 <summary>Grading settings</summary>
                 <form id="grading-settings">
+                  <label class="field">University grade-point preset<select id="university-preset"><option value="">Custom points</option><option value="unilag">UNILAG DLI Management Sciences · 2021–24 handbook</option></select></label>
+                  <a href="https://www.dli.unilag.edu.ng/wp-content/uploads/2021/04/Handbook-Management-Sciences-2021-2024.pdf" target="_blank" rel="noopener">Check the programme handbook, p. 23</a>
                   <label class="field">Grading scale
                     <select id="grade-scale"><option value="5">5.0 scale</option><option value="4">4.0 scale</option></select>
                   </label>
@@ -317,6 +319,7 @@
               <section class="card">
                 <h2>Mock results</h2>
                 <p id="exam-mock" class="big-number">No mock scores yet</p>
+                <div class="list" id="exam-trend" aria-label="Recent timed practice scores"></div>
                 <p id="exam-mock-detail" class="help">Enter mock marks to see your strongest subjects and revision priorities.</p>
                 <div id="exam-insights" class="list"></div>
               </section>
@@ -384,6 +387,7 @@
                 <label class="field week-control">Week of <input id="plan-week" type="date"></label>
                 <label class="field">Weekly study goal (minutes)<input type="number" id="weekly-goal" min="5" max="10080" step="5" value="120"></label>
                 <progress id="weekly-progress" max="120" value="0" aria-label="Weekly study minutes completed"></progress>
+                <button type="button" class="quiet" id="revision-reminder">Download this week’s revision reminders</button>
                 <p id="week-summary" class="help"></p>
                 <div id="tasks" class="list"></div>
               </section>
@@ -615,9 +619,14 @@
                     <label class="field">Password <input id="auth-password" type="password" minlength="10" maxlength="128" autocomplete="current-password" required></label>
                     <label class="field" id="invite-label" hidden>Invite code for new accounts <input id="auth-invite" maxlength="120"></label>
                   </div>
+                  <p class="help">Use a nickname if you prefer. Keep addresses, school IDs and contact details out of shared study notes. If you are under your school’s age for independent sign-up, ask a parent or guardian to help.</p>
                   <div class="actions"><button class="primary" type="submit" value="login">Sign in</button><button type="submit" value="register">Create account</button></div>
                 </form>
                 <div id="cloud-backup" hidden>
+                  <form id="allowance-form" hidden><h3>Tutor allowances</h3>
+                    <label class="field">Tier<select id="allowance-tier"><option value="free">Free · daily</option><option value="plus">Plus · paid period</option><option value="admin">Admin · testing</option></select></label>
+                    <label class="field">Successful requests<input id="allowance-count" type="number" min="0" max="10000" required></label>
+                    <button type="submit">Update allowance</button></form>
                   <form id="account-profile-form"><label class="field">Display name (optional)<input maxlength="60" id="account-display-name" autocomplete="nickname"></label><button type="submit">Save name</button></form>
                   <p id="sync-status" role="status">Saved on this device.</p>
                   <p class="help">Choose which workspace to start with. Edits then sync while this tab is connected. Export a backup before switching accounts on a shared device.</p>
@@ -649,6 +658,7 @@
               <ul><li>AI tutor for questions about your notes</li><li>Personalised practice questions</li><li>Coding hints and debugging walkthroughs</li></ul>
               <p id="plus-status" class="help">Subscriptions are currently closed.</p>
               <div class="actions"><button id="checkout" class="primary" type="button" disabled hidden>Plus is coming soon</button><button id="manage-sub" type="button" hidden>Manage subscription</button></div>
+              <div id="billing-history" class="list"></div>
               <p id="billing-status" class="status" role="status"></p>
             </section>
           </div>
