@@ -9,7 +9,8 @@ const isActiveSubscription = value => ["active", "non-renewing", "attention"].in
 
 function nextMonth(timestamp) {
   const date = new Date(timestamp);
-  const day = Math.min(28, date.getUTCDate());
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 2, 0)).getUTCDate();
+  const day = Math.min(lastDay, date.getUTCDate());
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, day, date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds());
 }
 

@@ -382,6 +382,8 @@
                   <p id="task-status" class="status" role="status"></p>
                 </form>
                 <label class="field week-control">Week of <input id="plan-week" type="date"></label>
+                <label class="field">Weekly study goal (minutes)<input type="number" id="weekly-goal" min="5" max="10080" step="5" value="120"></label>
+                <progress id="weekly-progress" max="120" value="0" aria-label="Weekly study minutes completed"></progress>
                 <p id="week-summary" class="help"></p>
                 <div id="tasks" class="list"></div>
               </section>
@@ -428,6 +430,7 @@
                   </form>
                 </details>
                 <p id="note-status" class="status" role="status"></p>
+                <label class="field">Search notes<input type="search" id="notes-search" placeholder="Title, course or note text"></label>
                 <div id="notes" class="list"></div>
               </section>
             </div>
@@ -577,6 +580,8 @@
                   <label class="field full">Question or topic <textarea id="tutor-question" rows="4" maxlength="1500" placeholder="Explain CPU scheduling using an example." required></textarea></label>
                   <label class="field full" id="tutor-code-label" hidden>Code to include (optional) <textarea id="tutor-code" rows="6" maxlength="10000" spellcheck="false"></textarea></label>
                 </div>
+                <label class="check"><input id="remember-chat" type="checkbox"> Save this conversation on this device</label>
+                <details><summary>Saved conversation</summary><div id="chat-log"></div><button type="button" id="clear-chat">Clear conversation</button></details>
                 <p class="help" id="tutor-context">Sending shares your question and any selected notes or code with the AI provider.</p>
                 <button class="primary" type="submit" id="ask-ai">Ask the tutor</button>
                 <p id="tutor-status" class="status" role="status"></p>
@@ -613,7 +618,7 @@
                   <div class="actions"><button class="primary" type="submit" value="login">Sign in</button><button type="submit" value="register">Create account</button></div>
                 </form>
                 <div id="cloud-backup" hidden>
-                  <form id="profile-form"><label class="field">Display name (optional)<input maxlength="60" id="profile-name" autocomplete="nickname"></label><button type="submit">Save name</button></form>
+                  <form id="account-profile-form"><label class="field">Display name (optional)<input maxlength="60" id="account-display-name" autocomplete="nickname"></label><button type="submit">Save name</button></form>
                   <p id="sync-status" role="status">Saved on this device.</p>
                   <p class="help">Choose which workspace to start with. Edits then sync while this tab is connected. Export a backup before switching accounts on a shared device.</p>
                   <div class="actions"><button id="cloud-save" type="button">Save to account</button><button id="cloud-restore" type="button">Restore from account</button></div>

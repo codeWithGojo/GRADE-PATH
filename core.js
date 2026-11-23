@@ -66,7 +66,7 @@
     return {
       version: 3, mode: "university", schoolClass: "SS 3", schoolTarget: 75, schoolTerms: [],
       scale: 5, points: { ...gradeDefaults[5] }, replace: false, semesters: [],
-      profiles: [], materials: [], notes: [], tasks: [], questions: [], attempts: [], mistakes: [],
+      weeklyGoal: 120, profiles: [], materials: [], notes: [], tasks: [], questions: [], attempts: [], mistakes: [],
       project: { title: "", milestones: [] }, labDrafts: {}, labPassed: [], assessment: null, exams: {}, selectedExam: "WAEC"
     };
   }
@@ -100,6 +100,7 @@
       throw new Error("Choose a valid GradePath backup file.");
     }
     const state = blankState();
+    if (Number.isInteger(source.weeklyGoal) && source.weeklyGoal >= 5 && source.weeklyGoal <= 10080) state.weeklyGoal = source.weeklyGoal;
     state.mode = source.mode === "secondary" ? "secondary" : "university";
     state.schoolClass = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"].includes(source.schoolClass) ? source.schoolClass : "SS 3";
     state.schoolTarget = Number.isFinite(source.schoolTarget) && source.schoolTarget >= 0 && source.schoolTarget <= 100 ? source.schoolTarget : 75;
@@ -157,11 +158,11 @@
       id: clean(item?.id, 90), due: validDate(item?.due) ? item.due : localDay(),
       streak: Math.max(0, Math.min(4, Number(item?.streak) || 0))
     })).filter(item => item.id);
-    state.labDrafts = Object.fromEntries(["html-form", "weighted-gpa", "revision-list"].flatMap(lesson => {
+    state.labDrafts = Object.fromEntries(["html-form", "weighted-gpa", "revision-list", "responsive-grid"].flatMap(lesson => {
       const code = source.labDrafts?.[lesson];
       return typeof code === "string" ? [[lesson, code.slice(0, 12_000)]] : [];
     }));
-    state.labPassed = shortList(source.labPassed, 3).filter(lesson => ["html-form", "weighted-gpa", "revision-list"].includes(lesson));
+    state.labPassed = shortList(source.labPassed, 4).filter(lesson => ["html-form", "weighted-gpa", "revision-list", "responsive-grid"].includes(lesson));
     if (source.assessment && typeof source.assessment === "object") {
       const { coursework, weight, target } = source.assessment;
       if ([coursework, weight, target].every(value => typeof value === "number" && value >= 0 && value <= 100) && weight < 100) {

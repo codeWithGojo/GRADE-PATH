@@ -27,6 +27,14 @@ window.GradePathCatalog = {
   ].map(([id, topic, prompt, options, answer, explanation]) => ({ id, topic, prompt, options, answer, explanation, course: "" })),
   lessons: [
     {
+      id: "responsive-grid", kind: "css", title: "Build a responsive study grid", skill: "CSS · Grid layout",
+      objective: "Make .study-grid a grid with two equal columns and a 1rem gap.",
+      lesson: "display selects the layout system. Fractional tracks share the available space after the gap has been reserved.",
+      starter: ".study-grid {\n  /* Arrange the study cards here. */\n}",
+      hints: ["Use display: grid.", "Use repeat(2, 1fr) for two equal tracks.", "Set gap: 1rem."],
+      solution: ".study-grid {\n  display: grid;\n  grid-template-columns: repeat(2, 1fr);\n  gap: 1rem;\n}"
+    },
+    {
       id: "html-form", kind: "html", title: "Build a course form", skill: "HTML · Forms",
       objective: "Make a form with a Units label, a number input, and a submit button.",
       lesson: "A form groups inputs. Give the input an id, point a visible label at it with for, and use the submit button to represent the form's main action.",
@@ -77,6 +85,9 @@ window.GradePathCatalog.examQuestions = [
   ["eng-comprehension", "English", "Ada left early because she expected traffic. What motivated her decision?", ["She missed the bus", "She anticipated a delay", "Traffic had cleared", "She forgot the time"], 1, "The phrase 'expected traffic' shows that Ada planned for a possible delay."],
   ["eng-tense", "English", "Choose the correct completion: By the time we arrived, the lecture ___.", ["has begun", "begins", "had begun", "will begin"], 2, "The earlier past action uses the past perfect, had begun."],
   ["math-linear", "Mathematics", "If 3x + 5 = 20, what is x?", ["3", "5", "8", "15"], 1, "Subtract 5 from both sides, then divide by 3."],
+  ["math-scale", "Mathematics", "A map uses a scale of 1:50,000. What real distance does 4 cm represent?", ["200 m", "2 km", "20 km", "200 km"], 1, "Four centimetres represents 200,000 cm. Divide by 100,000 to convert to kilometres."],
+  ["eng-tense", "English", "Choose the sentence with correct subject–verb agreement.", ["The list of topics are ready.", "The list of topics is ready.", "The topics is ready.", "The list have arrived."], 1, "The singular subject list takes is. The phrase of topics does not change the subject."],
+  ["econ-cost", "Economics", "Ada revises instead of doing a paid shift. What is the opportunity cost of revising?", ["Her exam fee", "The wages forgone", "Her total savings", "The price of her textbook"], 1, "Opportunity cost is the value of the next best alternative forgone, here the wages from the shift."],
   ["math-prob", "Mathematics", "A bag contains 3 red and 2 blue balls. What is the probability of drawing a blue ball?", ["2/3", "3/5", "1/2", "2/5"], 3, "Two of the five equally likely balls are blue."],
   ["math-percent", "Mathematics", "A ₦4,000 item is discounted by 15%. What is its sale price?", ["₦3,400", "₦3,600", "₦3,850", "₦4,600"], 0, "15% of ₦4,000 is ₦600. Subtract it from ₦4,000."],
   ["math-gradient", "Mathematics", "What is the gradient of the line through (1, 2) and (3, 8)?", ["2", "3", "4", "6"], 1, "Change in y divided by change in x is (8 − 2) / (3 − 1) = 3."],

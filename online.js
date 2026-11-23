@@ -46,8 +46,40 @@
     output.append(el("p", text), el("p", "Shared CGPA " + benchmark.cgpa.toFixed(2) + " / " + benchmark.scale.toFixed(1), "secondary"));
   }
 
+  let historyOwner = null;
+  let chat = [];
+  function showChat() {
+    byId("chat-log").replaceChildren(...chat.flatMap(turn => [el("strong", turn.question), el("p", turn.answer)]));
+    byId("clear-chat").disabled = !chat.length;
+  }
+  function openChat(owner) {
+    if (owner === historyOwner) return;
+    historyOwner = owner;
+    chat = [];
+    tutorMemory = null;
+    byId("tutor-answer").hidden = true;
+    byId("remember-chat").checked = false;
+    if (owner) {
+      try {
+        const saved = JSON.parse(localStorage.getItem("gradepath-chat-" + owner) || "null");
+        if (Array.isArray(saved)) { chat = saved.slice(-20); byId("remember-chat").checked = true; }
+      } catch {}
+    }
+    showChat();
+  }
+  function saveChat() {
+    if (!historyOwner) return;
+    try {
+      if (byId("remember-chat").checked) localStorage.setItem("gradepath-chat-" + historyOwner, JSON.stringify(chat));
+      else localStorage.removeItem("gradepath-chat-" + historyOwner);
+    } catch { status("tutor-status", "Browser storage could not save this conversation."); }
+    showChat();
+  }
+  byId("remember-chat").addEventListener("change", () => { if (!byId("remember-chat").checked) chat = []; saveChat(); });
+  byId("clear-chat").addEventListener("click", () => { chat = []; tutorMemory = null; saveChat(); });
   function renderSession() {
     const { account } = session;
+    openChat(account?.id || null);
     const bill = account?.billing;
     byId("sidebar-mode").textContent = session.online ? "Grades saved on this device" : "On this device";
     byId("top-account").textContent = bill?.active ? "GradePath Plus" : account ? "Free account" : "Free workspace";
@@ -59,7 +91,7 @@
     signIn.hidden = !session.online || Boolean(account);
     byId("sign-out").hidden = !account;
     byId("cloud-backup").hidden = !account || !session.workspaceBackup;
-    byId("profile-name").value = account?.name || "";
+    byId("account-display-name").value = account?.name || "";
     if (binding && binding.owner !== account?.id && session.online) detachSync();
     byId("invite-label").hidden = !session.inviteRequired;
     byId("cohort-join").disabled = !account;
@@ -183,10 +215,10 @@
   }
   window.addEventListener("gradepath-saved", scheduleSync);
   window.addEventListener("online", async () => { await refresh(); scheduleSync(); });
-  byId("profile-form").addEventListener("submit", async event => {
+  byId("account-profile-form").addEventListener("submit", async event => {
     event.preventDefault();
     try {
-      session = await api("/account/profile", "PUT", { name: value("profile-name") });
+      session = await api("/account/profile", "PUT", { name: value("account-display-name") });
       renderSession();
       status("account-status", "Profile updated.", "success");
     } catch (error) { status("account-status", error.message, "error"); }
@@ -348,6 +380,7 @@
     const code = mode === "code" ? value("tutor-code") : "";
     const contextKey = JSON.stringify([mode, course, note?.id, examContext, code]);
     const previous = tutorMemory?.key === contextKey ? tutorMemory.previous : [];
+    const questionOwner = session.account?.id;
     const askButton = byId("ask-ai");
     askButton.disabled = true;
     byId("tutor-answer").hidden = true;
@@ -356,10 +389,17 @@
     try {
       const result = await api("/tutor", "POST", {
         mode, question, course, code, previous,
+        level: state.mode === "secondary" ? state.schoolClass : "University",
+        confidence: mode === "revision" ? state.profiles.slice(0, 5).map(p => p.topic + " " + p.confidence + "/5").join(", ") : "",
         exam: examContext?.exam || "", subject: examContext?.subject || "",
         extracts: ["notes", "quiz", "flashcards"].includes(mode) ? noteExtracts(note, question) : []
       });
+      if (!session.account || session.account.id !== questionOwner) return;
       session.account.tutorRemaining = result.remaining;
+      if (byId("remember-chat").checked) {
+        chat = [...chat, { question, answer: result.answer }].slice(-20);
+        saveChat();
+      }
       tutorMemory = { key: contextKey, previous: [...previous, { question, answer: result.answer.slice(0, 1800) }].slice(-2) };
       byId("tutor-text").textContent = result.answer || "Your practice quiz is ready.";
       const sourceList = byId("tutor-sources");

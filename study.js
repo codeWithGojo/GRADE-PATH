@@ -59,6 +59,9 @@
     const start = C.weekStart(selectedWeek.value || C.localDay());
     const tasks = weekTasks(start);
     const done = tasks.filter(task => task.completed);
+    byId("weekly-goal").value = state.weeklyGoal;
+    byId("weekly-progress").max = state.weeklyGoal;
+    byId("weekly-progress").value = done.reduce((sum, task) => sum + task.minutes, 0);
     byId("week-summary").textContent = C.dateText(start) + " to " + C.dateText(C.shiftDay(6, start))
       + " · " + done.length + " of " + tasks.length + " done · " + done.reduce((sum, task) => sum + task.minutes, 0) + " min completed";
     renderList("tasks", tasks.map(task => {
@@ -81,6 +84,11 @@
     }), "No study tasks scheduled for this week.");
   }
 
+  byId("weekly-goal").addEventListener("change", event => {
+    if (!event.target.reportValidity() || !event.target.value) return;
+    state.weeklyGoal = event.target.valueAsNumber;
+    commit();
+  });
   selectedWeek.addEventListener("change", renderTasks);
   byId("task-form").addEventListener("submit", event => {
     event.preventDefault();
@@ -236,7 +244,9 @@
   });
 
   function renderNotes() {
-    renderList("notes", state.notes.map(note => {
+    const query = value("notes-search").trim().toLowerCase();
+    const notes = state.notes.filter(note => !query || [note.title, note.course, ...note.pages.map(p => p.text)].some(text => text.toLowerCase().includes(query)));
+    renderList("notes", notes.map(note => {
       const item = row(note.title,
         [note.course, note.pages.length + (note.kind === "pdf" ? " page(s)" : " section(s)")].filter(Boolean).join(" · "),
         clickButton("Ask tutor", () => GP.askAboutNote(note), "quiet"),
@@ -252,9 +262,10 @@
       }
       item.firstElementChild.append(details);
       return item;
-    }), "Upload or paste notes to keep them here.");
+    }), query ? "No matching notes." : "Upload or paste notes to keep them here.");
   }
 
+  byId("notes-search").addEventListener("input", renderNotes);
   let activeQuiz = null;
   let quizTimer = null;
   const quizPlayer = byId("quiz-player");
