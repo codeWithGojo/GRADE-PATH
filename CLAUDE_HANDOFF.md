@@ -49,8 +49,8 @@ The optional backend supports opt-in comparisons within matching school, program
 
 ## Design direction to preserve
 
-- Navy/near-black structure, blue University accents, burgundy/pink Secondary accents; no green-led theme.
-- Self-hosted Sora headings and Inter body text, with their SIL Open Font License files bundled.
+- **Superseded in V4 (Nov 2026):** red / black / warm-white tokens in `tokens.css`; signal red for University, burgundy for Secondary; no purple, lilac or green-led theme. See `docs/GRADEPATH_IMPLEMENTATION_STATUS.md`.
+- Self-hosted Fraunces headlines and Inter body text, with their SIL Open Font License files bundled.
 - Clear hierarchy, useful empty states and readable forms. Avoid inflated marketing metrics or fake activity.
 - Motion should communicate mode changes, interaction feedback and navigation. Respect reduced motion; essential content must remain accessible without animations.
 - Keep mobile navigation usable, controls labelled, focus visible, and financial/academic claims accurate.

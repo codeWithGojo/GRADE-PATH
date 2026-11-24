@@ -20,12 +20,13 @@ import { issueToken, consumeToken, markVerified, exportAccount, deleteAccount } 
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const staticFiles = new Map([
-  ["/", "index.html"], ["/index.html", "index.html"], ["/styles.css", "styles.css"], ["/sw.js","sw.js"], ["/surfaces.css","surfaces.css"], ["/surfaces.js","surfaces.js"],
-  ...["core", "catalog", "account-lifecycle-ui", "app", "grades", "study", "exams", "lab", "online", "school", "projects", "experience", "appearance"].map(name => ["/" + name + ".js", name + ".js"]),
-  ["/runner.html", "runner.html"], ...["sora.woff", "inter.woff"].map(name => ["/vendor/fonts/" + name, "vendor/fonts/" + name]), ["/favicon.svg", "favicon.svg"], ["/vendor/pdf.min.mjs", "vendor/pdf.min.mjs"],
+  ["/", "index.html"], ["/index.html", "index.html"], ["/sw.js","sw.js"], ["/surfaces.js","surfaces.js"], ["/robots.txt", "robots.txt"], ["/sitemap.xml", "sitemap.xml"],
+  ...["tokens", "styles", "surfaces", "learn", "landing"].map(name => ["/" + name + ".css", name + ".css"]),
+  ...["core", "catalog", "learn-core", "learn-content", "learn", "landing", "account-lifecycle-ui", "app", "grades", "study", "exams", "lab", "online", "school", "projects", "experience", "appearance"].map(name => ["/" + name + ".js", name + ".js"]),
+  ["/runner.html", "runner.html"], ...["fraunces.woff2", "fraunces-italic.woff2", "inter.woff"].map(name => ["/vendor/fonts/" + name, "vendor/fonts/" + name]), ["/favicon.svg", "favicon.svg"], ["/vendor/pdf.min.mjs", "vendor/pdf.min.mjs"],
   ["/vendor/pdf.worker.min.mjs", "vendor/pdf.worker.min.mjs"]
 ]);
-const contentTypes = { woff: "font/woff", svg: "image/svg+xml", html: "text/html; charset=utf-8", css: "text/css; charset=utf-8", js: "text/javascript; charset=utf-8", mjs: "text/javascript; charset=utf-8" };
+const contentTypes = { woff: "font/woff", woff2: "font/woff2", txt: "text/plain; charset=utf-8", xml: "application/xml; charset=utf-8", svg: "image/svg+xml", html: "text/html; charset=utf-8", css: "text/css; charset=utf-8", js: "text/javascript; charset=utf-8", mjs: "text/javascript; charset=utf-8" };
 const mainPolicy = "default-src 'self'; script-src 'self'; style-src 'self'; worker-src 'self' blob:; "
   + "frame-src 'self' about:; img-src 'self' blob: data:; connect-src 'self'; "
   + "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";

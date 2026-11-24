@@ -5,7 +5,7 @@ const root = new URL('../', import.meta.url);
 const output = new URL('dist/', root);
 await rm(output, { recursive: true, force: true });
 await mkdir(new URL('vendor/fonts/', output), { recursive: true });
-const files = ['index.html', 'styles.css', 'surfaces.css', 'surfaces.js', 'favicon.svg', 'runner.html', 'core.js', 'catalog.js', 'account-lifecycle-ui.js', 'app.js', 'grades.js', 'study.js', 'exams.js', 'lab.js', 'online.js', 'school.js', 'projects.js', 'appearance.js', 'experience.js', 'vendor/pdf.min.mjs', 'vendor/pdf.worker.min.mjs', 'vendor/PDFJS-LICENSE.txt', 'vendor/fonts/sora.woff', 'vendor/fonts/inter.woff', 'vendor/fonts/sora-OFL.txt', 'vendor/fonts/inter-OFL.txt'];
+const files = ['index.html', 'tokens.css', 'styles.css', 'surfaces.css', 'learn.css', 'landing.css', 'surfaces.js', 'favicon.svg', 'runner.html', 'core.js', 'catalog.js', 'learn-core.js', 'learn-content.js', 'learn.js', 'landing.js', 'account-lifecycle-ui.js', 'app.js', 'grades.js', 'study.js', 'exams.js', 'lab.js', 'online.js', 'school.js', 'projects.js', 'appearance.js', 'experience.js', 'robots.txt', 'sitemap.xml', 'vendor/pdf.min.mjs', 'vendor/pdf.worker.min.mjs', 'vendor/PDFJS-LICENSE.txt', 'vendor/fonts/fraunces.woff2', 'vendor/fonts/fraunces-italic.woff2', 'vendor/fonts/fraunces-OFL.txt', 'vendor/fonts/inter.woff', 'vendor/fonts/inter-OFL.txt'];
 for (const file of files) await copyFile(new URL(file, root), new URL(file, output));
 const digest = createHash("sha256");
 for (const file of [...files, "sw.js"]) digest.update(await readFile(new URL(file, root)));

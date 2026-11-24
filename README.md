@@ -6,7 +6,9 @@ GradePath is a study workspace for university and secondary-school students. The
 
 GradePath supports separate **University** and **Secondary** modes. Switch modes in the sidebar; your choice is remembered, and neither mode overwrites the other's results. University mode uses weighted GPA/CGPA. Secondary mode uses subject marks and term averages for JSS 1–SS 3, with a separate WAEC, NECO and JAMB preparation page. Study Room, Practice and Coding Lab are shared.
 
-The interface includes blue/navy university styling, burgundy/pink secondary styling, light and dark themes, animated controls, section reveals, a scroll indicator and a mobile menu. Motion is reduced when the device requests it. Sora and Inter fonts are bundled locally under their SIL Open Font Licenses in `vendor/fonts/`.
+The V4 interface uses a red / black / warm-white system defined in `tokens.css`: signal red for University, burgundy for Secondary, with light and dark themes. Headlines use Fraunces and body text uses Inter, both bundled locally under the SIL Open Font License in `vendor/fonts/`. Motion is reduced when the device requests it.
+
+The **Learn** section adds **Nigerian History** (source-cited stories with a region map, an evidence key and the language-course roadmap) and the **Formula library** (secondary and university formulas with tested calculators). Both are labelled as drafts until a subject expert reviews them. The landing page is built from replaceable sections; see [the section map](docs/LANDING_SECTIONS.md).
 
 ### What is live
 
@@ -80,8 +82,12 @@ Students opt in from **Account & Plus**. The comparison matches school, programm
 
 | File | What to change |
 |---|---|
-| `index.html` | Page headings, forms, and navigation |
-| `styles.css` | Colours, typography, spacing, and mobile layout |
+| `index.html` | Landing sections, page headings, forms, and navigation |
+| `tokens.css` | Brand colours, fonts, spacing, radii, shadows and motion |
+| `styles.css` | Workspace shell, shared components and feature pages |
+| `landing.css`, `landing.js` | Landing page sections and their motion |
+| `learn-content.js` | Nigerian History stories, language roadmap and formula topics (reviewable data) |
+| `learn-core.js`, `learn.js`, `learn.css` | Formula calculators (tested) and the Learn pages |
 | `catalog.js` | Resources, practice questions, hints, and Coding Lab lessons |
 | `core.js` | Grade rules, data format, mock scores, and calculations |
 | `app.js` | Mode switching, dashboard, navigation, and local storage |
