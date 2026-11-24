@@ -379,9 +379,11 @@
     canvas.height = 590;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.fillStyle = "#111d34";
+    ctx.fillStyle = "#0b0b0c";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#d4e2ff";
+    ctx.fillStyle = "#c8102e";
+    ctx.fillRect(0, 0, canvas.width, 14);
+    ctx.fillStyle = "#f0596b";
     ctx.font = "700 38px system-ui";
     ctx.fillText("GradePath", 70, 98);
     ctx.fillStyle = "#ffffff";
@@ -399,7 +401,7 @@
       ctx.setLineDash([]);
     }
     ctx.fillText(data.length === 1 ? last : first + " → " + last, 70, 365, 960);
-    ctx.fillStyle = "#d4e2ff";
+    ctx.fillStyle = "#b1aca4";
     ctx.font = "36px system-ui";
     ctx.fillText(state.scale.toFixed(1) + " scale · " + data.length + (data.length === 1 ? " semester" : " semesters"), 70, 443, 960);
     const name = C.clean(value("share-name"), 45);

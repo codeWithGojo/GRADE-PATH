@@ -150,7 +150,9 @@
     practice: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
     coding: '<path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18"/>',
     tutor: '<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/>',
-    account: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>'
+    account: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+    history: '<path d="M3 20c3-1 4-5 7-7s5-2 6-6 3-4 5-4"/><path d="M10 13c1 2 3 3 3 7"/><circle cx="16" cy="7" r="1.6"/>',
+    formulas: '<path d="M14 4h-2.5a2 2 0 0 0-2 1.7L7.5 19a2 2 0 0 1-2 1.7H4M7 10h7M15 13l5 6m0-6-5 6"/>'
   };
   document.querySelectorAll(".nav a, .phone-dock a").forEach(anchor => {
     const shape = icons[anchor.hash.slice(1)]; if (!shape) return;
@@ -198,6 +200,8 @@
   });
   requestAnimationFrame(() => moveTo(active(), false));
   window.addEventListener("resize", () => moveTo(active(), false));
+  // The shell is hidden on the landing page, so measure again once it is shown.
+  if ("ResizeObserver" in window) new ResizeObserver(() => moveTo(active(), false)).observe(bar);
   window.addEventListener("gradepath-mode", () => {
     moveTo(active(), true);
     byId("quiz-exam").value = state.mode === "secondary" ? state.selectedExam : "";
@@ -228,7 +232,7 @@
   }
   window.addEventListener("scroll", () => { if (!pending) { pending = true; requestAnimationFrame(scrollState); } }, { passive: true });
   window.addEventListener("resize", scrollState);
-  byId("back-to-top").addEventListener("click", () => { window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "instant" : "smooth" }); byId(GP.page()).querySelector("h1").focus({ preventScroll: true }); });
+  byId("back-to-top").addEventListener("click", () => { window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "instant" : "smooth" }); (byId("landing").hidden ? byId(GP.page()).querySelector("h1") : byId("landing-heading")).focus({ preventScroll: true }); });
   onPage(() => {
     if (profile.open) profile.close();
     if (entry.open) entry.close();

@@ -1,9 +1,10 @@
 /* Cache only public study tools. Account and provider responses always use the network. */
 const cacheName = "gradepath-shell-__BUILD__";
-const assets = ["/","/index.html","/styles.css","/core.js","/catalog.js","/app.js","/grades.js",
+const assets = ["/","/index.html","/tokens.css","/styles.css","/surfaces.css","/learn.css","/landing.css",
+  "/core.js","/catalog.js","/learn-core.js","/learn-content.js","/learn.js","/landing.js","/app.js","/grades.js",
   "/school.js","/study.js","/exams.js","/online.js","/lab.js","/projects.js","/experience.js",
-  "/surfaces.css","/surfaces.js","/appearance.js","/account-lifecycle-ui.js","/runner.html","/favicon.svg",
-  "/vendor/fonts/sora.woff","/vendor/fonts/inter.woff","/vendor/pdf.min.mjs","/vendor/pdf.worker.min.mjs"];
+  "/surfaces.js","/appearance.js","/account-lifecycle-ui.js","/runner.html","/favicon.svg",
+  "/vendor/fonts/fraunces.woff2","/vendor/fonts/fraunces-italic.woff2","/vendor/fonts/inter.woff","/vendor/pdf.min.mjs","/vendor/pdf.worker.min.mjs"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(assets)));
 });

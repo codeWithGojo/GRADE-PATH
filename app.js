@@ -183,8 +183,10 @@
     if (location.hash && location.hash !== "#main" && location.hash !== "#" + current) history.replaceState(null, "", "#" + current);
     for (const section of document.querySelectorAll(".page")) section.hidden = section.id !== current;
     for (const anchor of document.querySelectorAll(".nav a, .phone-dock a")) {
-      if (anchor.getAttribute("href") === "#" + current ||
-        (anchor.closest(".phone-dock") && anchor.hash === "#study" && ["exams", "projects", "coding", "tutor"].includes(current))) anchor.setAttribute("aria-current", "page");
+      const dockGroup = anchor.closest(".phone-dock") && (
+        (anchor.hash === "#study" && ["exams", "projects", "coding", "tutor", "calendar"].includes(current)) ||
+        (anchor.hash === "#history" && current === "formulas"));
+      if (anchor.getAttribute("href") === "#" + current || dockGroup) anchor.setAttribute("aria-current", "page");
       else anchor.removeAttribute("aria-current");
     }
     byId("breadcrumb").textContent = pageNames[current];

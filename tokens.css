@@ -1,0 +1,132 @@
+/* GradePath design tokens (V4 · red / black / white).
+   Every colour, type, spacing, radius, shadow and motion value used by the
+   landing page and the workspace comes from here. Change the brand here. */
+
+@font-face { font-family: "Fraunces"; src: url("vendor/fonts/fraunces.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url("vendor/fonts/fraunces-italic.woff2") format("woff2"); font-weight: 100 900; font-style: italic; font-display: swap; }
+@font-face { font-family: "Inter"; src: url("vendor/fonts/inter.woff") format("woff"); font-weight: 100 900; font-display: swap; }
+
+:root {
+  /* Type */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "Inter", system-ui, "Segoe UI", sans-serif;
+  --font-mono: "Cascadia Mono", "IBM Plex Mono", Consolas, monospace;
+  --text-xs: .75rem; --text-sm: .875rem; --text-md: 1rem; --text-lg: 1.125rem;
+  --text-xl: clamp(1.3rem, 1.1rem + .8vw, 1.6rem);
+  --text-2xl: clamp(1.75rem, 1.3rem + 1.8vw, 2.6rem);
+  --text-3xl: clamp(2.3rem, 1.5rem + 3.4vw, 4.2rem);
+  --text-hero: clamp(3rem, 1.4rem + 6.6vw, 7.4rem);
+  --leading-tight: 1.02; --leading-snug: 1.18; --leading-body: 1.55;
+  --tracking-display: -.035em; --tracking-label: .08em;
+
+  /* Space (4px base) */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px;
+  --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px; --space-10: 140px;
+  --gutter: clamp(16px, 4vw, 56px);
+  --measure: 62ch;
+
+  /* Shape and depth */
+  --radius-sm: 6px; --radius: 10px; --radius-lg: 16px; --radius-xl: 24px; --radius-pill: 999px;
+  --shadow-1: 0 1px 2px rgb(17 17 17 / .06);
+  --shadow-2: 0 8px 24px -12px rgb(17 17 17 / .22);
+  --shadow-3: 0 24px 60px -24px rgb(17 17 17 / .35);
+
+  /* Motion. Spring feel ≈ stiffness 500 / damping 40 (nearly critically damped). */
+  --dur-1: 180ms; --dur-2: 240ms; --dur-3: 300ms; --dur-reveal: 380ms;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-spring: cubic-bezier(.2, .9, .25, 1.04);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+
+  /* Fixed brand colours (same in both themes) */
+  --red-50: #fff1f2; --red-100: #ffe0e3; --red-200: #fdbcc3; --red-400: #f0596b;
+  --red-500: #e02a40; --red-600: #c8102e; --red-700: #a50c25; --red-800: #85091e;
+  --burgundy-600: #8c1d40; --burgundy-700: #6f1532; --burgundy-100: #f8dbe4;
+  --black: #0b0b0c; --black-2: #141416; --black-3: #1d1d20; --black-line: #2d2c30;
+  --white: #ffffff; --paper: #f6f3ee; --paper-2: #ece7df;
+  --on-dark: #f5f2ec; --on-dark-muted: #b1aca4;
+
+  /* Semantic: light theme */
+  --bg: var(--paper);
+  --surface: #ffffff;
+  --surface-2: #f0ece5;
+  --surface-sunk: #e9e4db;
+  --ink: #121214;
+  --ink-2: #2b2a2e;
+  --muted: #5d5a55;
+  --line: #ddd7cd;
+  --line-strong: #bdb6aa;
+  --accent: var(--red-600);
+  --accent-hover: var(--red-700);
+  --accent-active: var(--red-800);
+  --accent-ink: var(--red-700);        /* accent used as text on light surfaces */
+  --accent-soft: var(--red-50);
+  --accent-soft-2: var(--red-100);
+  --on-accent: #ffffff;
+  --focus: #c8102e;
+  --good: #1c5d3a; --bad: #b0162f; --warn: #7a4a06;
+  --chrome: var(--black);              /* sidebar / dark sections */
+  --chrome-2: var(--black-2);
+  --chrome-line: var(--black-line);
+  --chrome-ink: var(--on-dark);
+  --chrome-muted: var(--on-dark-muted);
+  --chrome-accent: var(--red-400);
+
+  color-scheme: light;
+}
+
+/* Secondary mode: deeper burgundy accent so the two study paths read differently. */
+:root[data-mode="secondary"] {
+  --accent: var(--burgundy-600);
+  --accent-hover: var(--burgundy-700);
+  --accent-active: #57102a;
+  --accent-ink: var(--burgundy-700);
+  --accent-soft: #fbeef2;
+  --accent-soft-2: var(--burgundy-100);
+  --focus: var(--burgundy-600);
+  --chrome-accent: #f08aa8;
+}
+
+:root[data-theme="dark"] {
+  --bg: var(--black);
+  --surface: var(--black-2);
+  --surface-2: var(--black-3);
+  --surface-sunk: #0f0f11;
+  --ink: var(--on-dark);
+  --ink-2: #dcd7cf;
+  --muted: #a7a29a;
+  --line: #2b2a2e;
+  --line-strong: #46444a;
+  --accent: var(--red-500);
+  --accent-hover: #ea4357;
+  --accent-active: var(--red-600);
+  --accent-ink: #ff7584;
+  --accent-soft: #2a1115;
+  --accent-soft-2: #3a161c;
+  --focus: #ff7584;
+  --good: #8fd5ac; --bad: #ff8a99; --warn: #f0c477;
+  --chrome: #070708;
+  --chrome-2: #111113;
+  --chrome-line: #242327;
+  --shadow-2: 0 8px 24px -12px rgb(0 0 0 / .7);
+  --shadow-3: 0 24px 60px -24px rgb(0 0 0 / .8);
+  color-scheme: dark;
+}
+:root[data-theme="dark"][data-mode="secondary"] {
+  --accent: #b8335d;
+  --accent-hover: #c94570;
+  --accent-active: var(--burgundy-600);
+  --accent-ink: #f59ab6;
+  --accent-soft: #2a1019;
+  --accent-soft-2: #3b1524;
+  --focus: #f59ab6;
+}
+
+/* Legacy names kept so existing scripts (charts, account UI) keep reading valid colours. */
+:root {
+  --blue: var(--accent);
+  --blue-dark: var(--accent-ink);
+  --soft: var(--accent-soft);
+  --light-blue: var(--accent-soft-2);
+  --navy: var(--chrome);
+  --radius-legacy: var(--radius-lg);
+}

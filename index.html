@@ -5,13 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Calculate your CGPA on a 5.0 or 4.0 scale and see what GPA you need across your remaining units. Track school results, plan revision and practise offline. No signup required for local study tools.">
   <link rel="canonical" href="https://gradepath-theta.vercel.app/">
-  <meta name="theme-color" content="#101526">
+  <meta name="theme-color" content="#0b0b0c">
+  <meta property="og:title" content="GradePath: CGPA calculator and study workspace">
+  <meta property="og:description" content="Track grades, plan revision, practise and explore Nigerian History in one study space for Nigerian students.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://gradepath-theta.vercel.app/">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="vendor/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
   <script src="appearance.js"></script>
   <title>CGPA Calculator for Nigerian Universities (5.0 and 4.0) | GradePath</title>
+  <link rel="stylesheet" href="tokens.css">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="surfaces.css">
+  <link rel="stylesheet" href="learn.css">
+  <link rel="stylesheet" href="landing.css">
   <script src="core.js" defer></script>
   <script src="catalog.js" defer></script>
+  <script src="learn-core.js" defer></script>
+  <script src="learn-content.js" defer></script>
   <script src="account-lifecycle-ui.js" defer></script>
   <script src="app.js" defer></script>
   <script src="grades.js" defer></script>
@@ -23,35 +34,306 @@
   <script src="projects.js" defer></script>
   <script src="experience.js" defer></script>
   <script src="surfaces.js" defer></script>
-  <link rel="stylesheet" href="surfaces.css">
+  <script src="learn.js" defer></script>
+  <script src="landing.js" defer></script>
 </head>
 <body>
   <div class="scroll-progress" aria-hidden="true"></div>
   <a class="skip" href="#main">Skip to content</a>
-  <main id="landing" class="landing">
-    <nav class="landing-nav" aria-label="GradePath home">
-      <a class="wordmark" href="#" aria-label="GradePath home"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>GradePath</a>
-      <div class="landing-links"><a href="#overview">Workspace</a><a href="#tutor">Study Pal</a><a href="#calendar">Calendar</a></div>
-      <a class="landing-login" href="#account">Sign in <span aria-hidden="true">↗</span></a>
-    </nav>
-    <section class="landing-hero" aria-labelledby="landing-heading">
-      <div class="landing-copy"><h1 id="landing-heading" tabindex="-1">Your semester,<br><em>in focus.</em></h1>
-      <p>Track your grades, plan revision and work through tough questions in one study space.</p>
-      <div class="landing-actions"><a class="button" href="#overview">Open workspace <span aria-hidden="true">↗</span></a><a href="#account" data-create-account>Create an account</a></div></div>
-      <div class="landing-art" aria-hidden="true"><canvas id="study-art" width="960" height="820"></canvas></div>
-    </section>
-    <section class="landing-tools" aria-label="Study tools">
-      <a href="#grades" data-enter-university><span class="tool-glyph" aria-hidden="true">∑</span><span><strong>Grades &amp; targets</strong><small>Calculate your next move</small></span><b aria-hidden="true">↗</b></a>
-      <a href="#calendar"><span class="tool-glyph" aria-hidden="true">▦</span><span><strong>Study calendar</strong><small>Plan your week</small></span><b aria-hidden="true">↗</b></a>
-      <a href="#tutor"><span class="tool-glyph" aria-hidden="true">✧</span><span><strong>AI Study Pal</strong><small>Talk through a topic</small></span><b aria-hidden="true">↗</b></a>
-    </section>
-  </main>
+  <!-- ================= LANDING PAGE =================
+       Section map: docs/LANDING_SECTIONS.md. Each section has a stable id (lp-*), its own
+       start/end comment here and its own block in landing.css. Replace, reorder or remove a
+       section without touching the others. Copy stays in markup so crawlers can read it. -->
+  <div id="landing" class="landing">
+    <header class="lp-header" id="lp-header">
+      <a class="wordmark" href="#" data-lp-top aria-label="GradePath home"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>GradePath</a>
+      <nav class="lp-links" id="lp-links" aria-label="On this page">
+        <a href="#" data-lp-scroll="lp-paths">Study paths</a>
+        <a href="#" data-lp-scroll="lp-grades">Grades</a>
+        <a href="#" data-lp-scroll="lp-study">Planning</a>
+        <a href="#" data-lp-scroll="lp-nigeria">Nigerian History</a>
+        <a href="#" data-lp-scroll="lp-engineering">Formulas</a>
+        <a class="lp-links-extra" href="#account">Sign in</a>
+        <a class="lp-links-extra lp-links-cta" href="#overview">Open workspace <span aria-hidden="true">↗</span></a>
+      </nav>
+      <div class="lp-header-actions">
+        <a class="lp-signin" href="#account">Sign in</a>
+        <a class="button primary lp-open" href="#overview" data-magnetic>Open workspace <span aria-hidden="true">↗</span></a>
+        <button class="lp-menu" id="lp-menu" type="button" aria-expanded="false" aria-controls="lp-links"><span class="lp-menu-lines" aria-hidden="true"></span><span class="lp-menu-label">Menu</span></button>
+      </div>
+    </header>
+
+    <main id="landing-main">
+      <!-- ===== SECTION START: lp-hero ===== -->
+      <section class="lp-section lp-hero" id="lp-hero" aria-labelledby="landing-heading">
+        <div class="lp-hero-copy">
+          <p class="lp-kicker" data-reveal>For Nigerian university and secondary students</p>
+          <h1 id="landing-heading" tabindex="-1" class="lp-hero-title"><span class="lp-line">Your semester,</span> <em class="lp-line">in focus.</em></h1>
+          <p class="lp-hero-lead" data-reveal>Track your grades, plan revision and work through tough questions in one study space. The study tools work in your browser, with no signup needed.</p>
+          <div class="lp-hero-actions" data-reveal>
+            <a class="button primary lp-cta" href="#overview" data-magnetic>Open workspace <span aria-hidden="true">↗</span></a>
+            <a class="lp-text-link" href="#account" data-create-account>Create an account</a>
+          </div>
+        </div>
+        <div class="lp-hero-art" aria-hidden="true"><canvas id="study-art" width="960" height="820"></canvas></div>
+        <ul class="lp-hero-facts" aria-label="What GradePath covers" data-reveal>
+          <li><strong>5.0 &amp; 4.0</strong><span>CGPA scales</span></li>
+          <li><strong>JSS 1–SS 3</strong><span>term results</span></li>
+          <li><strong>WAEC · NECO · JAMB</strong><span>practice plans</span></li>
+          <li><strong>Offline-ready</strong><span>after first visit</span></li>
+        </ul>
+      </section>
+      <!-- ===== SECTION END: lp-hero ===== -->
+
+      <!-- ===== SECTION START: lp-paths (product orientation) ===== -->
+      <section class="lp-section lp-paths" id="lp-paths" aria-labelledby="lp-paths-title">
+        <header class="lp-section-head" data-reveal>
+          <p class="lp-index">01 · Choose your path</p>
+          <h2 id="lp-paths-title">Two study paths.<br>One workspace.</h2>
+          <p>University and secondary results are stored separately. Switching paths never overwrites the other's work.</p>
+        </header>
+        <div class="lp-path-grid">
+          <article class="lp-path" data-path="university" data-reveal>
+            <p class="lp-path-label">University</p>
+            <h3>Weighted GPA, CGPA and the grade you need next.</h3>
+            <ul>
+              <li>5.0 or 4.0 scale, with editable grade points</li>
+              <li>Optional latest-attempt rule for retakes</li>
+              <li>Graduation target and exam-mark planner</li>
+              <li>Final Year Project ideas and milestones</li>
+            </ul>
+            <a class="button lp-path-go" href="#overview" data-enter="university">Start in University <span aria-hidden="true">→</span></a>
+          </article>
+          <article class="lp-path" data-path="secondary" data-reveal>
+            <p class="lp-path-label">Secondary</p>
+            <h3>Term results, personal targets and exam plans.</h3>
+            <ul>
+              <li>JSS 1 to SS 3 subject marks by term</li>
+              <li>Strongest subjects and what's below target</li>
+              <li>WAEC, NECO and JAMB subject plans</li>
+              <li>JAMB mock totals out of 400</li>
+            </ul>
+            <a class="button lp-path-go" href="#overview" data-enter="secondary">Start in Secondary <span aria-hidden="true">→</span></a>
+          </article>
+        </div>
+      </section>
+      <!-- ===== SECTION END: lp-paths ===== -->
+
+      <!-- ===== SECTION START: lp-grades (grades and academic planning) ===== -->
+      <section class="lp-section lp-grades" id="lp-grades" aria-labelledby="lp-grades-title">
+        <div class="lp-grades-copy" data-reveal>
+          <p class="lp-index">02 · Grades &amp; targets</p>
+          <h2 id="lp-grades-title">Know what next semester needs.</h2>
+          <p>Enter your courses, units and grades. GradePath works out your GPA and CGPA, lets you preview a semester before saving it, and tells you the average you need on your remaining units to reach a target.</p>
+          <dl class="lp-grades-list">
+            <div><dt>Preview before saving</dt><dd>See how a draft semester moves your CGPA.</dd></div>
+            <div><dt>Graduation target</dt><dd>The GPA needed on your remaining units.</dd></div>
+            <div><dt>Exam mark needed</dt><dd>From your CA score and its weight.</dd></div>
+          </dl>
+          <p class="lp-fineprint">Results follow the grade points and retake rule you set. Check your school's handbook. GradePath is not an official transcript.</p>
+        </div>
+        <figure class="lp-preview lp-gpa" data-reveal aria-labelledby="lp-gpa-caption">
+          <div class="lp-preview-bar"><span>Example semester</span><span>5.0 scale</span></div>
+          <table>
+            <thead><tr><th scope="col">Course</th><th scope="col">Units</th><th scope="col">Grade</th><th scope="col">Points</th></tr></thead>
+            <tbody>
+              <tr><td>CSC101</td><td>3</td><td>A</td><td>15</td></tr>
+              <tr><td>CSC102</td><td>2</td><td>B</td><td>8</td></tr>
+              <tr><td>MAT101</td><td>1</td><td>C</td><td>3</td></tr>
+            </tbody>
+          </table>
+          <div class="lp-gpa-result"><span>GPA = 26 ÷ 6 units</span><strong>4.33</strong></div>
+          <figcaption id="lp-gpa-caption">This is the sample semester built into the calculator. Try it yourself under <a href="#grades" data-enter="university">Grades &amp; targets</a>.</figcaption>
+        </figure>
+      </section>
+      <!-- ===== SECTION END: lp-grades ===== -->
+
+      <!-- ===== SECTION START: lp-study (Study Room and calendar) ===== -->
+      <section class="lp-section lp-study" id="lp-study" aria-labelledby="lp-study-title">
+        <header class="lp-section-head" data-reveal>
+          <p class="lp-index">03 · Study Room &amp; calendar</p>
+          <h2 id="lp-study-title">Plan the week. Then actually do it.</h2>
+        </header>
+        <div class="lp-study-grid">
+          <ol class="lp-steps" data-reveal>
+            <li><strong>Add a course and a topic</strong><span>Rate your confidence from 1 to 5 and save the assessment date.</span></li>
+            <li><strong>Get suggested sessions</strong><span>Low confidence and close dates come first. These are simple rules you can see, not AI.</span></li>
+            <li><strong>Work through your week</strong><span>Tick off tasks, track minutes against a weekly goal and download reminders.</span></li>
+            <li><strong>See it on the calendar</strong><span>Revision, assessments and exam dates appear together, day by day.</span></li>
+          </ol>
+          <figure class="lp-preview lp-week" data-reveal aria-label="Example week in the study calendar">
+            <div class="lp-preview-bar"><span>Study calendar</span><span>Example week</span></div>
+            <div class="lp-week-grid" aria-hidden="true">
+              <div><b>Mon</b><i data-kind="revision">CSC 304 · Scheduling</i></div>
+              <div><b>Tue</b></div>
+              <div><b>Wed</b><i data-kind="revision">Past questions</i><i data-kind="assessment">CSC 304 test</i></div>
+              <div><b>Thu</b><i data-kind="revision">MTH 201 · Limits</i></div>
+              <div><b>Fri</b></div>
+              <div><b>Sat</b><i data-kind="exam">Mock exam</i></div>
+              <div><b>Sun</b><i data-kind="revision">Review mistakes</i></div>
+            </div>
+            <figcaption class="lp-legend"><span data-kind="revision">Revision</span><span data-kind="assessment">Assessment</span><span data-kind="exam">Exam</span></figcaption>
+          </figure>
+        </div>
+      </section>
+      <!-- ===== SECTION END: lp-study ===== -->
+
+      <!-- ===== SECTION START: lp-practice (Practice and Coding Lab) ===== -->
+      <section class="lp-section lp-practice" id="lp-practice" aria-labelledby="lp-practice-title">
+        <div class="lp-practice-copy" data-reveal>
+          <p class="lp-index">04 · Practice &amp; Coding Lab</p>
+          <h2 id="lp-practice-title">Practise, then learn from what you missed.</h2>
+          <p>Timed question sets come with an explanation for every answer. Wrong answers go into a mistake notebook and come back for spaced review. Add your own questions from material you're allowed to use.</p>
+          <ul class="lp-numbers">
+            <li><strong>48</strong><span>original practice questions</span></li>
+            <li><strong>8</strong><span>exam subjects with starter sets</span></li>
+            <li><strong>4</strong><span>guided coding lessons with checks</span></li>
+          </ul>
+          <p class="lp-fineprint">The questions were written for GradePath. They are not official or licensed past papers, and practice scores are not exam results.</p>
+        </div>
+        <figure class="lp-code" data-reveal aria-label="Coding Lab lesson preview">
+          <div class="lp-preview-bar"><span>Coding Lab · Weighted GPA in JavaScript</span><span class="lp-pass">✓ Checks passed</span></div>
+<pre><code><span class="c">// Weighted GPA: sum(points × units) ÷ units</span>
+<span class="k">function</span> <span class="f">gpa</span>(courses) {
+  <span class="k">let</span> points = <span class="n">0</span>, units = <span class="n">0</span>;
+  <span class="k">for</span> (<span class="k">const</span> c <span class="k">of</span> courses) {
+    points += c.point * c.units;
+    units += c.units;
+  }
+  <span class="k">return</span> units ? points / units : <span class="n">0</span>;
+}</code></pre>
+          <figcaption>Your code runs in an isolated, time-limited checker inside the browser.</figcaption>
+        </figure>
+      </section>
+      <!-- ===== SECTION END: lp-practice ===== -->
+
+      <!-- ===== SECTION START: lp-pal (AI Study Pal) ===== -->
+      <section class="lp-section lp-pal" id="lp-pal" aria-labelledby="lp-pal-title">
+        <header class="lp-section-head" data-reveal>
+          <p class="lp-index">05 · AI Study Pal</p>
+          <h2 id="lp-pal-title">A study partner that shows its sources.</h2>
+          <p class="lp-pal-status" id="lp-pal-status" role="status"><span class="lp-dot" aria-hidden="true"></span><span id="lp-pal-status-text">Checking whether Study Pal is switched on for this site…</span></p>
+        </header>
+        <div class="lp-pal-grid">
+          <div class="lp-pal-col" data-reveal>
+            <h3>What it can do</h3>
+            <ul>
+              <li>Explain a topic step by step, at your level</li>
+              <li>Answer from notes you choose, and point to the page or section used</li>
+              <li>Turn notes into a practice quiz you can save to Practice</li>
+              <li>Give coding hints and help with a revision plan</li>
+            </ul>
+          </div>
+          <div class="lp-pal-col" data-reveal>
+            <h3>What to know</h3>
+            <ul>
+              <li>It needs a GradePath account and an AI provider set up on the server</li>
+              <li>Free accounts have a small daily allowance; Plus is planned at ₦1,000 a month</li>
+              <li>It says when your notes don't answer the question</li>
+              <li>Conversations are saved only if you choose to save them on your device</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+      <!-- ===== SECTION END: lp-pal ===== -->
+
+      <!-- ===== SECTION START: lp-nigeria (Nigerian history, language and culture) ===== -->
+      <section class="lp-section lp-nigeria" id="lp-nigeria" aria-labelledby="lp-nigeria-title">
+        <div class="lp-nigeria-copy" data-reveal>
+          <p class="lp-index">06 · New · Nigerian History</p>
+          <h2 id="lp-nigeria-title">Nigeria's story, <em>told with its evidence.</em></h2>
+          <p>From Nok terracottas to the return of civilian rule, each story says what it rests on: excavated objects, written records or oral tradition. Where historians disagree, you see both sides and the sources.</p>
+          <a class="button primary" href="#history" data-magnetic>Explore Nigerian History <span aria-hidden="true">→</span></a>
+          <p class="lp-fineprint">The first 12 stories are drafts written from published histories and are waiting for a historian's review. Each one is labelled.</p>
+        </div>
+        <figure class="lp-river" aria-hidden="true" data-reveal>
+          <svg viewBox="0 0 380 360" class="lp-river-art">
+            <path class="lp-river-land" d="M38 60 C78 30 150 34 214 40 C268 30 320 22 352 48 C372 84 360 130 342 168 C326 210 300 248 282 286 C258 320 214 334 170 330 C126 332 86 312 58 286 C30 252 24 210 30 168 C34 128 22 92 38 60 Z"/>
+            <path class="lp-river-line" pathLength="1" d="M30 104 C80 120 120 128 150 150 C176 170 196 186 206 206 C214 228 206 252 196 272 C188 290 176 306 168 330"/>
+            <path class="lp-river-line thin" pathLength="1" d="M356 160 C318 168 286 176 260 186 C238 194 220 200 206 206"/>
+            <circle class="lp-river-node" cx="206" cy="206" r="6"/>
+            <g class="lp-river-sites"><circle cx="214" cy="150" r="4"/><circle cx="236" cy="270" r="4"/><circle cx="70" cy="232" r="4"/><circle cx="150" cy="292" r="4"/><circle cx="300" cy="70" r="4"/><circle cx="92" cy="74" r="4"/></g>
+          </svg>
+        </figure>
+        <ol class="lp-era-strip" data-reveal>
+          <li><span>c. 900 BCE</span>Nok terracottas</li>
+          <li><span>9th–10th c.</span>Igbo-Ukwu bronzes</li>
+          <li><span>1804</span>Sokoto Caliphate</li>
+          <li><span>1929</span>The Women's War</li>
+          <li><span>1960</span>Independence</li>
+        </ol>
+        <p class="lp-languages" data-reveal><strong>Nigerian languages:</strong> courses in Hausa, Igbo and Yorùbá are planned first. None are open yet. A language opens only after native speakers have checked its lessons, spelling and tone marks.</p>
+      </section>
+      <!-- ===== SECTION END: lp-nigeria ===== -->
+
+      <!-- ===== SECTION START: lp-engineering (engineering principles and formulas) ===== -->
+      <section class="lp-section lp-engineering" id="lp-engineering" aria-labelledby="lp-eng-title">
+        <div class="lp-eng-copy" data-reveal>
+          <p class="lp-index">07 · New · Formula library</p>
+          <h2 id="lp-eng-title">Formulas you can take apart.</h2>
+          <p>Every formula comes with what each symbol means, its SI unit, the assumptions behind it, a worked example and a calculator that shows each substitution. University topics add the derivation.</p>
+          <a class="button" href="#formulas">Open the formula library <span aria-hidden="true">→</span></a>
+        </div>
+        <figure class="lp-formula" data-reveal aria-labelledby="lp-formula-name">
+          <div class="lp-level" role="group" aria-label="Choose a level">
+            <button type="button" data-lp-level="secondary" aria-pressed="true">Secondary</button>
+            <button type="button" data-lp-level="university" aria-pressed="false">University</button>
+          </div>
+          <div class="lp-formula-card" data-lp-card="secondary">
+            <p class="lp-formula-eq">V = I R</p>
+            <p class="lp-formula-name" id="lp-formula-name">Ohm's law · Electricity</p>
+            <dl><div><dt>V</dt><dd>voltage, volts (V)</dd></div><div><dt>I</dt><dd>current, amperes (A)</dd></div><div><dt>R</dt><dd>resistance, ohms (Ω)</dd></div></dl>
+            <p class="lp-formula-note">2 A through 6 Ω → V = 2 × 6 = 12 V</p>
+          </div>
+          <div class="lp-formula-card" data-lp-card="university" hidden>
+            <p class="lp-formula-eq">σ = M y ÷ I</p>
+            <p class="lp-formula-name">Flexure formula · Structural mechanics</p>
+            <dl><div><dt>σ</dt><dd>bending stress, Pa</dd></div><div><dt>M</dt><dd>bending moment, N·m</dd></div><div><dt>y</dt><dd>distance from neutral axis, m</dd></div><div><dt>I</dt><dd>second moment of area, m⁴</dd></div></dl>
+            <p class="lp-formula-note">Assumes plane sections stay plane and the material is linear-elastic.</p>
+          </div>
+        </figure>
+      </section>
+      <!-- ===== SECTION END: lp-engineering ===== -->
+
+      <!-- ===== SECTION START: lp-start (how to get started / final CTA) ===== -->
+      <section class="lp-section lp-start" id="lp-start" aria-labelledby="lp-start-title">
+        <h2 id="lp-start-title" data-reveal>Start with one semester.</h2>
+        <ol class="lp-start-steps" data-reveal>
+          <li><span>1</span>Choose University or Secondary.</li>
+          <li><span>2</span>Add your results, or try the example.</li>
+          <li><span>3</span>Plan this week's revision.</li>
+        </ol>
+        <div class="lp-start-actions" data-reveal>
+          <a class="button lp-cta-light" href="#overview" data-magnetic>Open workspace <span aria-hidden="true">↗</span></a>
+          <a class="lp-text-link" href="#account" data-create-account>Create an account to sync across devices</a>
+        </div>
+      </section>
+      <!-- ===== SECTION END: lp-start ===== -->
+    </main>
+
+    <!-- ===== SECTION START: lp-footer ===== -->
+    <footer class="lp-footer" id="lp-footer">
+      <div class="lp-footer-brand">
+        <a class="wordmark" href="#" data-lp-top><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>GradePath</a>
+        <p>A study workspace for Nigerian students. Your study data stays in this browser unless you sign in and choose to sync it.</p>
+      </div>
+      <nav aria-label="Product"><h2>Product</h2><a href="#overview">Workspace</a><a href="#grades" data-enter="university">CGPA calculator</a><a href="#calendar">Study calendar</a><a href="#tutor">AI Study Pal</a></nav>
+      <nav aria-label="Learning"><h2>Learning</h2><a href="#history">Nigerian History</a><a href="#formulas">Formula library</a><a href="#practice">Practice</a><a href="#coding">Coding Lab</a></nav>
+      <nav aria-label="Official exam resources"><h2>Official resources</h2><a href="https://waeconline.org.ng/e-learning/" target="_blank" rel="noopener noreferrer">WAEC e-Learning</a><a href="https://neco.gov.ng/exams/ssce-internal" target="_blank" rel="noopener noreferrer">NECO SSCE</a><a href="https://ibass.jamb.gov.ng/" target="_blank" rel="noopener noreferrer">JAMB IBASS</a></nav>
+      <nav aria-label="Account"><h2>Account</h2><a href="#account">Sign in</a><a href="#account" data-create-account>Create an account</a><a href="#account">Export or delete your data</a></nav>
+      <p class="lp-footer-base"><span>© GradePath · Dev Boyz</span><span>Practice content is original. Exam names belong to their bodies.</span></p>
+    </footer>
+    <!-- ===== SECTION END: lp-footer ===== -->
+  </div>
+  <!-- ================= END LANDING PAGE ================= -->
   <div class="shell" hidden>
     <aside class="sidebar">
-      <a class="wordmark" href="#" aria-label="GradePath home"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> GradePath</a>
-      <button class="menu-button" id="menu-toggle" data-repo-icon="menu" type="button" aria-expanded="false" aria-controls="workspace-menu"><span>Profile</span></button>
+      <div class="sidebar-top">
+        <a class="wordmark" href="#" aria-label="GradePath home"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span> GradePath</a>
+        <button class="menu-button" id="menu-toggle" data-repo-icon="menu" type="button" aria-expanded="false" aria-controls="workspace-menu"><span>Menu</span></button>
+      </div>
       <div class="mode-control">
-        <span class="mode-caption">Your study path</span>
+        <span class="mode-caption" id="mode-caption">Study path</span>
         <div class="t-tabs mode-tabs" role="tablist" aria-label="Study mode">
           <span class="t-tabs-pill" aria-hidden="true"></span>
           <button class="t-tab" id="mode-university" role="tab" aria-controls="main" aria-selected="true" tabindex="0" data-mode="university">University</button>
@@ -60,17 +342,31 @@
       </div>
       <div class="menu-panel" id="workspace-menu">
         <nav class="nav" id="workspace-navigation" aria-label="GradePath">
-          <a href="#overview" aria-current="page">Overview</a>
-          <a href="#grades" data-mode-only="university">Grades &amp; targets</a>
-          <a href="#school" data-mode-only="secondary" hidden>School results</a>
-          <a href="#exams" data-mode-only="secondary" hidden>Exam preparation</a>
-          <a href="#projects" data-mode-only="university">Final Year Projects</a>
-          <a href="#study">Study Room</a>
-          <a href="#calendar">Study calendar</a>
-          <a href="#practice">Practice</a>
-          <a href="#coding">Coding Lab</a>
-          <a href="#tutor">AI Study Pal</a>
-          <a href="#account">Account &amp; Plus</a>
+          <div class="nav-group">
+            <p class="nav-label">Results</p>
+            <a href="#overview" aria-current="page">Overview</a>
+            <a href="#grades" data-mode-only="university">Grades &amp; targets</a>
+            <a href="#school" data-mode-only="secondary" hidden>School results</a>
+            <a href="#exams" data-mode-only="secondary" hidden>Exam preparation</a>
+            <a href="#projects" data-mode-only="university">Final Year Projects</a>
+          </div>
+          <div class="nav-group">
+            <p class="nav-label">Study</p>
+            <a href="#study">Study Room</a>
+            <a href="#calendar">Study calendar</a>
+            <a href="#practice">Practice</a>
+            <a href="#coding">Coding Lab</a>
+            <a href="#tutor">AI Study Pal</a>
+          </div>
+          <div class="nav-group">
+            <p class="nav-label">Learn</p>
+            <a href="#history">Nigerian History</a>
+            <a href="#formulas">Formula library</a>
+          </div>
+          <div class="nav-group">
+            <p class="nav-label">You</p>
+            <a href="#account">Account &amp; Plus</a>
+          </div>
         </nav>
         <div class="sidebar-foot">
           <span id="sidebar-mode">On this device</span>
@@ -87,10 +383,11 @@
       <a href="#school" data-mode-only="secondary" hidden>Results</a>
       <a href="#study">Study</a>
       <a href="#practice">Practice</a>
+      <a href="#history">Learn</a>
     </nav>
 
-    <dialog id="profile-sheet" class="phone-sheet" aria-label="Profile and tools">
-      <div class="sheet-head"><h2>Profile and tools</h2><button type="button" data-sheet-close data-repo-icon="close">Close</button></div>
+    <dialog id="profile-sheet" class="phone-sheet" aria-label="Menu">
+      <div class="sheet-head"><h2>Menu</h2><button type="button" data-sheet-close data-repo-icon="close">Close</button></div>
     </dialog>
     <dialog id="entry-sheet" class="phone-sheet" aria-label="Enter results">
       <div class="sheet-head"><h2>Enter results</h2><button type="button" data-sheet-close data-repo-icon="close">Close</button></div>
@@ -114,16 +411,13 @@
             </div>
             <svg class="home-path" viewBox="0 0 420 222" aria-hidden="true" focusable="false">
               <defs>
-                <pattern id="home-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#96afff" stroke-opacity=".2"/></pattern>
-                <linearGradient id="home-line" x2="1" y2="0"><stop stop-color="#799bff"/><stop offset="1" stop-color="#a2f3df"/></linearGradient>
-                <radialGradient id="home-light"><stop stop-color="#89a3ff" stop-opacity=".28"/><stop offset="1" stop-color="#89a3ff" stop-opacity="0"/></radialGradient>
+                <pattern id="home-grid" width="24" height="24" patternUnits="userSpaceOnUse"><path class="hp-grid" d="M24 0H0V24" fill="none"/></pattern>
               </defs>
-              <rect x="6" y="14" width="406" height="192" rx="20" fill="url(#home-grid)" stroke="#96afff" stroke-opacity=".24"/>
-              <ellipse cx="300" cy="76" rx="125" ry="78" fill="url(#home-light)"/>
-              <path class="home-path-line" pathLength="1" d="M49 162C115 162 123 107 194 107S257 52 344 52" fill="none" stroke="url(#home-line)" stroke-width="3" stroke-linecap="round"/>
-              <g class="home-path-node" fill="#1a2d62" stroke="#a8bcff" stroke-width="2"><circle cx="49" cy="162" r="7"/><circle cx="194" cy="107" r="7"/></g>
-              <g class="home-path-node"><circle cx="344" cy="52" r="20" fill="#a2f3df" fill-opacity=".15"/><circle cx="344" cy="52" r="9" fill="#a2f3df"/></g>
-              <g class="home-path-labels" fill="#e5edff" font-family="system-ui, sans-serif" font-size="14" font-weight="650">
+              <rect class="hp-frame" x="6" y="14" width="406" height="192" rx="20" fill="url(#home-grid)"/>
+              <path class="home-path-line" pathLength="1" d="M49 162C115 162 123 107 194 107S257 52 344 52" fill="none" stroke-width="3" stroke-linecap="round"/>
+              <g class="home-path-node" stroke-width="2"><circle cx="49" cy="162" r="7"/><circle cx="194" cy="107" r="7"/></g>
+              <g class="home-path-node end"><circle cx="344" cy="52" r="20"/><circle cx="344" cy="52" r="9"/></g>
+              <g class="home-path-labels" font-size="14" font-weight="650">
                 <text x="35" y="190">Track</text><text x="181" y="134">Plan</text><text x="319" y="91">Practise</text>
               </g>
             </svg>
@@ -633,6 +927,67 @@
               <a class="button" href="#account">Open account settings</a>
               <p class="help">Use the answer to guide your revision. Check important details against your course materials.</p>
             </section>
+          </div>
+        </section>
+
+        <!-- Nigerian History (content: learn-content.js → history; rendering: learn.js) -->
+        <section class="page learn-page" id="history" aria-labelledby="history-heading" hidden>
+          <header class="learn-hero">
+            <div class="learn-hero-copy">
+              <p class="eyebrow">Learn · Nigeria</p>
+              <h1 id="history-heading" tabindex="-1">Nigerian <em>History</em></h1>
+              <p>Stories from the land between the Niger and the Benue, read through the evidence behind them. Filter by era, or choose a region on the map.</p>
+              <p class="learn-note">These stories are drafts written from published histories. Each is waiting for a historian's review and is labelled until then.</p>
+            </div>
+            <figure class="history-map-figure">
+              <svg id="history-map" viewBox="0 0 380 360" role="group" aria-label="Regions of Nigeria"></svg>
+              <figcaption>Schematic map, not to scale. The Niger and Benue meet at Lokoja (red dot). Select a region to filter the stories.</figcaption>
+            </figure>
+          </header>
+          <div class="history-filters">
+            <div class="era-picker" id="history-eras" role="group" aria-label="Filter by era"></div>
+            <div class="history-filter-row">
+              <label class="field">Region <select id="history-region"></select></label>
+              <p id="history-count" role="status"></p>
+            </div>
+          </div>
+          <div class="evidence-key" id="evidence-key" aria-label="Kinds of evidence"></div>
+          <ol class="history-timeline" id="history-timeline" aria-label="Stories in time order"></ol>
+          <section class="card languages-card" aria-labelledby="languages-heading">
+            <p class="eyebrow">Languages of Nigeria</p>
+            <h2 id="languages-heading">Language courses are being prepared</h2>
+            <p id="language-summary"></p>
+            <div class="languages-grid">
+              <div><h3>Before a language opens</h3><ol id="language-requirements"></ol></div>
+              <div><h3>Planned languages</h3><ul id="language-registry"></ul></div>
+            </div>
+            <p class="help">More than 500 languages are spoken in Nigeria. We'll add each one only when it can be taught properly.</p>
+          </section>
+          <section class="card content-policy" aria-labelledby="policy-heading">
+            <h2 id="policy-heading">How this content is made</h2>
+            <ul>
+              <li>Each story lists its sources and the kind of evidence it rests on.</li>
+              <li>Where evidence is incomplete or historians disagree, the story says so and gives more than one view.</li>
+              <li>Images, music and oral recordings are added only with permission from the people and communities they come from, and are credited.</li>
+              <li>A story is marked "Reviewed" only after a qualified historian has checked it.</li>
+            </ul>
+          </section>
+        </section>
+
+        <!-- Formula library (content: learn-content.js → engineering; maths: learn-core.js) -->
+        <section class="page learn-page" id="formulas" aria-labelledby="formulas-heading" hidden>
+          <div class="page-heading">
+            <p class="eyebrow">Learn · Engineering &amp; physics</p>
+            <h1 id="formulas-heading" tabindex="-1">Formula library</h1>
+            <p>Principles and formulas for secondary school and university. Each one explains its symbols, units and assumptions, shows a worked example, and lets you solve it with your own numbers.</p>
+          </div>
+          <div class="formula-controls">
+            <div class="level-switch" id="formula-levels" role="group" aria-label="Learner level"></div>
+            <label class="field">Discipline <select id="formula-discipline"></select></label>
+          </div>
+          <div class="formula-layout">
+            <nav class="formula-index" aria-label="Formulas"><ul id="formula-list"></ul></nav>
+            <article class="card formula-detail" id="formula-detail"></article>
           </div>
         </section>
 
